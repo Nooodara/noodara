@@ -1,0 +1,812 @@
+{
+  "run_id": 42884716047,
+  "attempt": 1,
+  "url": "https://github.com/Nooodara/noodara/actions/runs/42884716047",
+  "source_sha": "dabdd438463b876cce4702f524fbdac21aa90e30",
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "reruns": 0,
+  "artifacts": [],
+  "jobs": [
+    {
+      "id": 130069869320,
+      "name": "diagnose (24.04)",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run pnpm install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Validate supervisor boundaries before fixture execution",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Observe actual legacy-build fixture without browser actions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ],
+      "supervisor_boundary_counts": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "fixture_calls_observed": 2,
+      "fixture_vitest_counts": "Raw fixture Vitest output intentionally discarded by bounded supervisor; do not infer a numeric test total/skip count from job success.",
+      "records": [
+        {
+          "kind": "source",
+          "sha": "dabdd438463b876cce4702f524fbdac21aa90e30",
+          "files": {
+            "tests/integration/helpers/ssh.ts": "94f3dba098d553c9d9d7441477129c4deda8c28057e95aeadd1f40cc8c67f8fd",
+            "tests/integration/images/sshd-ubuntu-24.04/Dockerfile": "ac8407dd1e767bc96aeca63a228a29a2505042b5f0eee5c48b73a0f42e729970",
+            "tests/integration/images/sshd-common/entrypoint.sh": "a50d3944592fc195daef9acb2448c50b47bc24956222d987188333cb427b5333",
+            "tests/integration/images/sshd-common/setup-users.sh": "db46d8a1d8969ffbe9049774bd10564335d0ffa86d9faa6cb8d91dd33118f7de"
+          }
+        },
+        {
+          "kind": "daemon",
+          "outcome": "success",
+          "identity": "linux/amd64 29.4.2"
+        },
+        {
+          "kind": "base_manifest",
+          "ubuntu": "24.04",
+          "digest": "sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852"
+        },
+        {
+          "kind": "context",
+          "ubuntu": "24.04",
+          "cache": "cold"
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "image_build",
+          "outcome": "begin",
+          "elapsedMs": 0
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "image_build",
+          "outcome": "success",
+          "elapsedMs": 30197
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "container_create",
+          "outcome": "begin",
+          "elapsedMs": 30197
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "container_create",
+          "outcome": "success",
+          "elapsedMs": 30229
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "container_start",
+          "outcome": "begin",
+          "elapsedMs": 30229
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "published_port",
+          "outcome": "begin",
+          "elapsedMs": 30229
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "container_start",
+          "outcome": "success",
+          "elapsedMs": 30350
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "published_port",
+          "outcome": "success",
+          "elapsedMs": 30350
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "ssh_readiness",
+          "outcome": "begin",
+          "elapsedMs": 30350
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "ssh_readiness",
+          "outcome": "success",
+          "elapsedMs": 31110
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "cleanup",
+          "outcome": "begin",
+          "elapsedMs": 31111
+        },
+        {
+          "kind": "stage",
+          "owner": "3ae9a00a",
+          "stage": "cleanup",
+          "outcome": "success",
+          "elapsedMs": 31232
+        },
+        {
+          "kind": "context",
+          "ubuntu": "24.04",
+          "cache": "warm"
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "image_build",
+          "outcome": "begin",
+          "elapsedMs": 0
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "image_build",
+          "outcome": "success",
+          "elapsedMs": 159
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "container_create",
+          "outcome": "begin",
+          "elapsedMs": 159
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "container_create",
+          "outcome": "success",
+          "elapsedMs": 180
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "container_start",
+          "outcome": "begin",
+          "elapsedMs": 180
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "published_port",
+          "outcome": "begin",
+          "elapsedMs": 180
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "container_start",
+          "outcome": "success",
+          "elapsedMs": 301
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "published_port",
+          "outcome": "success",
+          "elapsedMs": 301
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "ssh_readiness",
+          "outcome": "begin",
+          "elapsedMs": 301
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "ssh_readiness",
+          "outcome": "success",
+          "elapsedMs": 1171
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "cleanup",
+          "outcome": "begin",
+          "elapsedMs": 1172
+        },
+        {
+          "kind": "stage",
+          "owner": "0468b794",
+          "stage": "cleanup",
+          "outcome": "success",
+          "elapsedMs": 1285
+        },
+        {
+          "kind": "owned_container_cleanup",
+          "owner": "3ae9a00a",
+          "outcome": "absent",
+          "removeSucceeded": true
+        },
+        {
+          "kind": "owned_image_cleanup",
+          "owner": "3ae9a00a",
+          "outcome": "removed"
+        },
+        {
+          "kind": "owned_container_cleanup",
+          "owner": "0468b794",
+          "outcome": "absent",
+          "removeSucceeded": true
+        },
+        {
+          "kind": "owned_image_cleanup",
+          "owner": "0468b794",
+          "outcome": "removed"
+        },
+        {
+          "kind": "process",
+          "outcome": "success",
+          "exitCode": 0
+        }
+      ],
+      "derived_stage_durations": [
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "image_build",
+          "duration_ms": 30197,
+          "completed_elapsed_ms": 30197
+        },
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "container_create",
+          "duration_ms": 32,
+          "completed_elapsed_ms": 30229
+        },
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "container_start",
+          "duration_ms": 121,
+          "completed_elapsed_ms": 30350
+        },
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "published_port",
+          "duration_ms": 121,
+          "completed_elapsed_ms": 30350
+        },
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "ssh_readiness",
+          "duration_ms": 760,
+          "completed_elapsed_ms": 31110
+        },
+        {
+          "cache": "cold",
+          "owner": "3ae9a00a",
+          "stage": "cleanup",
+          "duration_ms": 121,
+          "completed_elapsed_ms": 31232
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "image_build",
+          "duration_ms": 159,
+          "completed_elapsed_ms": 159
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "container_create",
+          "duration_ms": 21,
+          "completed_elapsed_ms": 180
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "container_start",
+          "duration_ms": 121,
+          "completed_elapsed_ms": 301
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "published_port",
+          "duration_ms": 121,
+          "completed_elapsed_ms": 301
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "ssh_readiness",
+          "duration_ms": 870,
+          "completed_elapsed_ms": 1171
+        },
+        {
+          "cache": "warm",
+          "owner": "0468b794",
+          "stage": "cleanup",
+          "duration_ms": 113,
+          "completed_elapsed_ms": 1285
+        }
+      ]
+    },
+    {
+      "id": 130069869999,
+      "name": "diagnose (22.04)",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run pnpm install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Validate supervisor boundaries before fixture execution",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Observe actual legacy-build fixture without browser actions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Post Run pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ],
+      "supervisor_boundary_counts": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "fixture_calls_observed": 2,
+      "fixture_vitest_counts": "Raw fixture Vitest output intentionally discarded by bounded supervisor; do not infer a numeric test total/skip count from job success.",
+      "records": [
+        {
+          "kind": "source",
+          "sha": "dabdd438463b876cce4702f524fbdac21aa90e30",
+          "files": {
+            "tests/integration/helpers/ssh.ts": "94f3dba098d553c9d9d7441477129c4deda8c28057e95aeadd1f40cc8c67f8fd",
+            "tests/integration/images/sshd-ubuntu-22.04/Dockerfile": "1217674288e81b62725f8efe890feaf13ac1bfc7582bfd2cfa6b865b5349947d",
+            "tests/integration/images/sshd-common/entrypoint.sh": "a50d3944592fc195daef9acb2448c50b47bc24956222d987188333cb427b5333",
+            "tests/integration/images/sshd-common/setup-users.sh": "db46d8a1d8969ffbe9049774bd10564335d0ffa86d9faa6cb8d91dd33118f7de"
+          }
+        },
+        {
+          "kind": "daemon",
+          "outcome": "success",
+          "identity": "linux/amd64 29.4.2"
+        },
+        {
+          "kind": "base_manifest",
+          "ubuntu": "22.04",
+          "digest": "sha256:076e7bf82319619f28dd0aa9c02ab34b055ad37100395b4f49a2ffba04fb5e11"
+        },
+        {
+          "kind": "context",
+          "ubuntu": "22.04",
+          "cache": "cold"
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "image_build",
+          "outcome": "begin",
+          "elapsedMs": 0
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "image_build",
+          "outcome": "success",
+          "elapsedMs": 21521
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "container_create",
+          "outcome": "begin",
+          "elapsedMs": 21522
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "container_create",
+          "outcome": "success",
+          "elapsedMs": 21536
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "container_start",
+          "outcome": "begin",
+          "elapsedMs": 21536
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "published_port",
+          "outcome": "begin",
+          "elapsedMs": 21536
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "container_start",
+          "outcome": "success",
+          "elapsedMs": 21640
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "published_port",
+          "outcome": "success",
+          "elapsedMs": 21640
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "ssh_readiness",
+          "outcome": "begin",
+          "elapsedMs": 21640
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "ssh_readiness",
+          "outcome": "success",
+          "elapsedMs": 22265
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "cleanup",
+          "outcome": "begin",
+          "elapsedMs": 22266
+        },
+        {
+          "kind": "stage",
+          "owner": "009d1fac",
+          "stage": "cleanup",
+          "outcome": "success",
+          "elapsedMs": 22382
+        },
+        {
+          "kind": "context",
+          "ubuntu": "22.04",
+          "cache": "warm"
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "image_build",
+          "outcome": "begin",
+          "elapsedMs": 0
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "image_build",
+          "outcome": "success",
+          "elapsedMs": 94
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "container_create",
+          "outcome": "begin",
+          "elapsedMs": 94
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "container_create",
+          "outcome": "success",
+          "elapsedMs": 109
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "container_start",
+          "outcome": "begin",
+          "elapsedMs": 109
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "published_port",
+          "outcome": "begin",
+          "elapsedMs": 109
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "container_start",
+          "outcome": "success",
+          "elapsedMs": 216
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "published_port",
+          "outcome": "success",
+          "elapsedMs": 216
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "ssh_readiness",
+          "outcome": "begin",
+          "elapsedMs": 216
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "ssh_readiness",
+          "outcome": "success",
+          "elapsedMs": 991
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "cleanup",
+          "outcome": "begin",
+          "elapsedMs": 991
+        },
+        {
+          "kind": "stage",
+          "owner": "48a38cdd",
+          "stage": "cleanup",
+          "outcome": "success",
+          "elapsedMs": 1094
+        },
+        {
+          "kind": "owned_container_cleanup",
+          "owner": "009d1fac",
+          "outcome": "absent",
+          "removeSucceeded": true
+        },
+        {
+          "kind": "owned_image_cleanup",
+          "owner": "009d1fac",
+          "outcome": "removed"
+        },
+        {
+          "kind": "owned_container_cleanup",
+          "owner": "48a38cdd",
+          "outcome": "absent",
+          "removeSucceeded": true
+        },
+        {
+          "kind": "owned_image_cleanup",
+          "owner": "48a38cdd",
+          "outcome": "removed"
+        },
+        {
+          "kind": "process",
+          "outcome": "success",
+          "exitCode": 0
+        }
+      ],
+      "derived_stage_durations": [
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "image_build",
+          "duration_ms": 21521,
+          "completed_elapsed_ms": 21521
+        },
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "container_create",
+          "duration_ms": 14,
+          "completed_elapsed_ms": 21536
+        },
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "container_start",
+          "duration_ms": 104,
+          "completed_elapsed_ms": 21640
+        },
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "published_port",
+          "duration_ms": 104,
+          "completed_elapsed_ms": 21640
+        },
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "ssh_readiness",
+          "duration_ms": 625,
+          "completed_elapsed_ms": 22265
+        },
+        {
+          "cache": "cold",
+          "owner": "009d1fac",
+          "stage": "cleanup",
+          "duration_ms": 116,
+          "completed_elapsed_ms": 22382
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "image_build",
+          "duration_ms": 94,
+          "completed_elapsed_ms": 94
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "container_create",
+          "duration_ms": 15,
+          "completed_elapsed_ms": 109
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "container_start",
+          "duration_ms": 107,
+          "completed_elapsed_ms": 216
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "published_port",
+          "duration_ms": 107,
+          "completed_elapsed_ms": 216
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "ssh_readiness",
+          "duration_ms": 775,
+          "completed_elapsed_ms": 991
+        },
+        {
+          "cache": "warm",
+          "owner": "48a38cdd",
+          "stage": "cleanup",
+          "duration_ms": 103,
+          "completed_elapsed_ms": 1094
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Prospective fresh hosted runner Linux AMD64 legacy fixture observations; successful execution does not prove historical timeout mechanism.",
+    "Base manifest digest observed separately; exact resolved platform/base image ID is not captured by frozen workflow.",
+    "Container start and published-port stage intervals overlap; distinct operation timings cannot be inferred beyond emitted hooks.",
+    "No failure, deadline or cancellation occurred in actual runner fixtures. Controlled Node subprocess/boundary tests are separate from actual Docker cancellation proof.",
+    "A4 historical cause unproven. A5 outer cancellation/late-resource cleanup remains unsatisfied; prior controlled held-build reproducer demonstrates gap."
+  ]
+}

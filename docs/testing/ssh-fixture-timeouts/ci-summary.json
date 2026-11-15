@@ -1,0 +1,130 @@
+{
+  "observed_at": "2026-11-10T18:48:24.105Z",
+  "docs_sha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+  "run_id": 42743060357,
+  "attempt": 1,
+  "jobs_final": {
+    "success": 9,
+    "failure": 3,
+    "skipped": 0,
+    "total": 12
+  },
+  "test_counts": {
+    "unit": {
+      "passed": 10267,
+      "failed": 0,
+      "skipped": 0,
+      "files_passed": 454
+    },
+    "site": {
+      "passed": 212,
+      "failed": 0,
+      "skipped": 0,
+      "files_passed": 18
+    },
+    "state_machine": {
+      "passed": 590,
+      "failed": 0,
+      "skipped": 0,
+      "files_passed": 7
+    },
+    "ai_evals": {
+      "passed": 414,
+      "failed": 0,
+      "skipped": 0,
+      "files_passed": 8
+    },
+    "boot_smoke": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "files_passed": 1
+    },
+    "security": {
+      "vitest_passed": 14,
+      "vitest_files_passed": 7,
+      "playwright_passed": 1
+    },
+    "e2e": {
+      "passed": 284,
+      "failed": 2,
+      "skipped": 0
+    },
+    "installer": {
+      "passed": 48,
+      "skipped": 8,
+      "files_failed": 1,
+      "files_passed": 9
+    },
+    "integration": {
+      "passed": 1304,
+      "skipped": 13,
+      "files_failed": 1,
+      "files_passed": 107,
+      "files_skipped": 3
+    }
+  },
+  "installer": {
+    "job_id": 129588583325,
+    "first_build": "installer-dind-ubuntu-22.04",
+    "failure_category": "image_build_deadline",
+    "deadline_ms": 300000,
+    "diagnostic_rebuild_deadline_ms": 300000,
+    "failed_file": "tests/integration/installer/idempotent-rerun.test.ts",
+    "conclusion": "failure",
+    "mechanism_proven": false,
+    "related_to_ssh24_proven": false,
+    "repair_disposition": "Separate scoped plan amendment required before installer repair; blocks 35-02."
+  },
+  "integration": {
+    "job_id": 129588583307,
+    "failure_category": "setup_hook_deadline",
+    "deadline_ms": 900000,
+    "failed_file": "tests/integration/activity/canary-deploy.test.ts",
+    "line": 356,
+    "ubuntu": "22.04",
+    "mechanism_proven": false,
+    "related_to_ssh24_proven": false,
+    "repair_disposition": "Independent triage must be scoped before any repair; no waiver of CI failure."
+  },
+  "artifacts": [
+    {
+      "id": 13730449440,
+      "name": "playwright-report",
+      "size_in_bytes": 807099,
+      "url": "https://api.github.com/repos/Nooodara/noodara/actions/artifacts/13730449440",
+      "archive_download_url": "https://api.github.com/repos/Nooodara/noodara/actions/artifacts/13730449440/zip",
+      "expired": false,
+      "created_at": "2026-11-10T02:54:10Z",
+      "expires_at": "2026-11-17T02:54:09Z",
+      "updated_at": "2026-11-10T02:54:10Z",
+      "digest": "sha256:6704782b3acc292f1d80ced0b0a67bf8c9364f958eb309538550916a63a67b68",
+      "workflow_run": {
+        "id": 42743060357,
+        "repository_id": 1380659734,
+        "head_repository_id": 1380659734,
+        "head_branch": "main",
+        "head_sha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266"
+      }
+    },
+    {
+      "id": 13730396249,
+      "name": "coverage-report",
+      "size_in_bytes": 3138463,
+      "url": "https://api.github.com/repos/Nooodara/noodara/actions/artifacts/13730396249",
+      "archive_download_url": "https://api.github.com/repos/Nooodara/noodara/actions/artifacts/13730396249/zip",
+      "expired": false,
+      "created_at": "2026-11-10T02:33:17Z",
+      "expires_at": "2026-11-24T02:33:15Z",
+      "updated_at": "2026-11-10T02:33:17Z",
+      "digest": "sha256:69ace2d26129cd6e46f4e871006487745870cf0dded012f1155d4315fdaf0717",
+      "workflow_run": {
+        "id": 42743060357,
+        "repository_id": 1380659734,
+        "head_repository_id": 1380659734,
+        "head_branch": "main",
+        "head_sha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266"
+      }
+    }
+  ]
+}

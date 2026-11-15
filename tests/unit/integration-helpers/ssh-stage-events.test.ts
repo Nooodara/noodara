@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Writable } from 'node:stream';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 
 const mock = vi.hoisted(() => ({
   build: vi.fn(),
@@ -34,7 +35,9 @@ vi.mock('../../integration/helpers/container-start.js', () => ({
   startLabelledContainer: async (_image: string, start: (labels: Record<string, string>) => Promise<unknown>) => start({}),
 }));
 
-import { startSshd, type SshDiagnosticEvent } from '../../integration/helpers/ssh.js';
+import {
+  createSshDiagnostics, createSshdLifecycle, startSshd, type SshDiagnosticEvent,
+} from '../../integration/helpers/ssh.js';
 
 describe('SSH fixture startup stage evidence', () => {
   beforeEach(() => {
@@ -129,4 +132,129 @@ describe('SSH fixture startup stage evidence', () => {
     },
   );
 
+});
+
+// H1 (35-03, after 35-04): diagnostic emission stays observational on every failure path. A
+// sink that throws, writes to a closed stream, reports backpressure, never settles or rejects
+// can neither replace the original startup outcome nor skip deadline/cancellation cleanup, and
+// no raw error ever falls back to stdout/stderr.
+type SinkKind = 'throwing' | 'closed' | 'backpressured' | 'unsettled' | 'rejected';
+const SINK_KINDS: readonly SinkKind[] = ['throwing', 'closed', 'backpressured', 'unsettled', 'rejected'];
+
+function hostileSink(kind: SinkKind) {
+  const closed = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
+  closed.on('error', () => undefined);
+  closed.destroy();
+  return vi.fn((event: SshDiagnosticEvent): void | boolean | Promise<unknown> => {
+    if (kind === 'throwing') throw new Error('synthetic-sensitive-sink-failure');
+    if (kind === 'closed') return closed.write(`${JSON.stringify(event)}\n`);
+    if (kind === 'backpressured') return false;
+    if (kind === 'unsettled') return new Promise<void>(() => undefined);
+    return Promise.reject(new Error('synthetic-sensitive-sink-rejection'));
+  });
+}
+
+describe('H1: hostile diagnostic sinks never change startup outcome or skip cleanup', () => {
+  let stdout: MockInstance<typeof process.stdout.write>;
+  let stderr: MockInstance<typeof process.stderr.write>;
+  let consoleError: MockInstance<typeof console.error>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mock.remove.mockReset();
+    mock.build.mockReset();
+    mock.start.mockReset();
+    mock.build.mockResolvedValue({});
+    mock.start.mockResolvedValue({ stop: vi.fn(), getHost: () => '127.0.0.1', getMappedPort: () => 2022 });
+    stdout = vi.spyOn(process.stdout, 'write');
+    stderr = vi.spyOn(process.stderr, 'write');
+    consoleError = vi.spyOn(console, 'error');
+  });
+
+  afterEach(() => {
+    const written = [...stdout.mock.calls, ...stderr.mock.calls, ...consoleError.mock.calls]
+      .map((call) => String(call[0])).join('\n');
+    stdout.mockRestore();
+    stderr.mockRestore();
+    consoleError.mockRestore();
+    expect(written).not.toContain('synthetic-sensitive');
+  });
+
+  it.each(SINK_KINDS)('%s sink: startup failure keeps the primary rejection and still reaps the owner', async (kind) => {
+    const sink = hostileSink(kind);
+    const primary = new Error('synthetic-sensitive-start-failure');
+    mock.start.mockRejectedValue(primary);
+
+    await expect(startSshd({ ubuntu: '24.04', diagnostics: sink })).rejects.toBe(primary);
+
+    expect(mock.remove).toHaveBeenCalledTimes(1);
+    expect(sink.mock.calls.length).toBeGreaterThanOrEqual(1);
+    for (const [event] of sink.mock.calls) expect(JSON.stringify(event)).not.toContain('synthetic-sensitive');
+  });
+
+  it.each(SINK_KINDS)('%s sink: a held build completing after cancellation never starts a container', async (kind) => {
+    const sink = hostileSink(kind);
+    const controller = new AbortController();
+    const reason = new Error('controlled cancellation');
+    let release!: () => void;
+    mock.build.mockImplementation(() => new Promise<void>((resolve) => { release = resolve; }));
+    const startup = startSshd({ ubuntu: '22.04', signal: controller.signal, diagnostics: sink });
+    const rejection = expect(startup).rejects.toBe(reason);
+    controller.abort(reason);
+    release();
+
+    await rejection;
+    expect(mock.start).not.toHaveBeenCalled();
+  });
+
+  it.each(SINK_KINDS)('%s sink: a start that succeeds after the deadline is reaped and rejects with the reason', async (kind) => {
+    const sink = hostileSink(kind);
+    const controller = new AbortController();
+    const reason = new Error('controlled deadline');
+    const late = { stop: vi.fn(), getHost: () => '127.0.0.1', getMappedPort: () => 2022 };
+    let release!: () => void;
+    mock.start.mockImplementation(() => new Promise((resolve) => { release = () => { resolve(late); }; }));
+    const startup = startSshd({ ubuntu: '24.04', signal: controller.signal, diagnostics: sink });
+    const rejection = expect(startup).rejects.toBe(reason);
+    await vi.waitFor(() => { expect(mock.start).toHaveBeenCalledTimes(1); });
+    controller.abort(reason);
+    release();
+
+    await rejection;
+    // The abort sweep and the post-settle owner sweep both ran; the stale handle got no stop.
+    expect(mock.remove.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(late.stop).not.toHaveBeenCalled();
+  });
+
+  it.each(SINK_KINDS)('%s sink: lifecycle cancel rejects promptly, joins the late start and reaps its owner', async (kind) => {
+    const sink = hostileSink(kind);
+    const late = { stop: vi.fn(), getHost: () => '127.0.0.1', getMappedPort: () => 2022 };
+    let release!: () => void;
+    mock.start.mockImplementation(() => new Promise((resolve) => { release = () => { resolve(late); }; }));
+    const lifecycle = createSshdLifecycle({ ubuntu: '22.04', diagnostics: sink });
+    await vi.waitFor(() => { expect(mock.start).toHaveBeenCalledTimes(1); });
+    const reason = new Error('controlled cancellation');
+    lifecycle.cancel(reason);
+    await expect(lifecycle.result).rejects.toBe(reason);
+
+    const stopping = lifecycle.stop();
+    release();
+    await expect(stopping).resolves.toBeUndefined();
+    await expect(lifecycle.settled).resolves.toBeUndefined();
+    expect(mock.remove.mock.calls.length).toBeGreaterThanOrEqual(2);
+    await expect(lifecycle.stop()).resolves.toBeUndefined();
+  });
+
+  it('excessive event production stays bounded while startup and cleanup complete', async () => {
+    const accepted: SshDiagnosticEvent[] = [];
+    const fixture = await startSshd({ ubuntu: '24.04', diagnostics: (event) => { accepted.push(event); } });
+    await fixture.stop();
+    const diagnostic = createSshDiagnostics(crypto.randomUUID(), (event) => { accepted.push(event); });
+    for (let n = 0; n < 100_000; n += 1) diagnostic.record('published_port', 'timeout', new Error('synthetic-sensitive-flood'));
+    expect(accepted.length).toBe(12 + 64);
+    const elapsed = accepted.slice(12).map((event) => event.elapsedMs);
+    expect(elapsed).toEqual([...elapsed].sort((a, b) => a - b));
+    expect(Object.keys(accepted[accepted.length - 1] ?? {}).sort()).toEqual(['category', 'elapsedMs', 'outcome', 'owner', 'stage']);
+    expect(JSON.stringify(accepted)).not.toContain('synthetic-sensitive');
+  });
 });

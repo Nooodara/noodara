@@ -1,0 +1,10 @@
+{
+  "conclusion": "failure",
+  "created_at": "2026-11-10T02:28:57Z",
+  "event": "push",
+  "head_sha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+  "id": 42743060357,
+  "run_attempt": 1,
+  "status": "completed",
+  "updated_at": "2026-11-10T03:54:08Z"
+}

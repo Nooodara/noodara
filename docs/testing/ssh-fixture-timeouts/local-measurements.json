@@ -1,0 +1,520 @@
+{
+  "owner": "586ed50e",
+  "kind": "isolated-buildx-comparison",
+  "platform": "linux/arm64",
+  "limitations": [
+    "Buildx uses BuildKit; fixture Testcontainers uses legacy Docker build API. This is a comparison, not exact fixture execution or CI root-cause proof."
+  ],
+  "sourceHead": "490574d150595f1f1e2aadb6b1004e2deb8d031e",
+  "sourceFiles": {
+    "tests/integration/images/installer-dind-common/entrypoint.sh": "a0b9acd72ce6637e133656104bbdb4f8b6e5bae2484bd58e524aff0b6dfd9589",
+    "tests/integration/images/installer-dind-ubuntu-22.04/Dockerfile": "5a89014aa878340e8edc4d39649bbddd2d232264e690a565f9543a1ee3421ac8",
+    "tests/integration/images/installer-dind-ubuntu-24.04/Dockerfile": "5e05e431d5bd1519fa0365b0e951dff8f97ed5f68a398c7e44ce2c209ba0bd0d",
+    "tests/integration/images/sshd-common/entrypoint.sh": "a50d3944592fc195daef9acb2448c50b47bc24956222d987188333cb427b5333",
+    "tests/integration/images/sshd-common/setup-users.sh": "db46d8a1d8969ffbe9049774bd10564335d0ffa86d9faa6cb8d91dd33118f7de",
+    "tests/integration/images/sshd-common/slow-df.sh": "a4da300eddc4d6d62448575a14fbbd0a6b3e761d8717bf02920112c58b7e596f",
+    "tests/integration/images/sshd-common/sshd_config.d/noodara-test.conf": "ba51d1cfe7a3afb75399223518ddde9780d731f8d30081de43804a88390bd3f7",
+    "tests/integration/images/sshd-dockerd-common/entrypoint.sh": "69bbd7548393499171dcc07e61f0d8dda8f4ca3d6028b69300cdd4a21b097c77",
+    "tests/integration/images/sshd-dockerd-common/setup-git-host.sh": "b302d868866592541eb626174c078ca49901557a10cf9321521100a47ff1ac39",
+    "tests/integration/images/sshd-dockerd-ubuntu-22.04/Dockerfile": "1b89753e363b87ee1484030d7474a469cdcf1913d285a0ef4dee50dbcd31cc82",
+    "tests/integration/images/sshd-dockerd-ubuntu-24.04/Dockerfile": "a72a85f4f2296d57f35a5c5ed9be279a433dbaae90dbbed3ba062071361e16db",
+    "tests/integration/images/sshd-ubuntu-22.04/Dockerfile": "1217674288e81b62725f8efe890feaf13ac1bfc7582bfd2cfa6b865b5349947d",
+    "tests/integration/images/sshd-ubuntu-24.04/Dockerfile": "ac8407dd1e767bc96aeca63a228a29a2505042b5f0eee5c48b73a0f42e729970"
+  },
+  "measurements": [
+    {
+      "stage": "builder_create",
+      "command": [
+        "docker",
+        "buildx",
+        "create",
+        "--name",
+        "noodara-35-03-586ed50e",
+        "--driver",
+        "docker-container"
+      ],
+      "outcome": "success",
+      "elapsedMs": 211,
+      "exitCode": 0
+    },
+    {
+      "stage": "builder_bootstrap",
+      "command": [
+        "docker",
+        "buildx",
+        "inspect",
+        "--builder",
+        "noodara-35-03-586ed50e",
+        "--bootstrap"
+      ],
+      "outcome": "success",
+      "elapsedMs": 3683,
+      "exitCode": 0
+    },
+    {
+      "stage": "image_build",
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "noodara-35-03-586ed50e",
+        "--load",
+        "--progress=quiet",
+        "--build-arg",
+        "WITH_DOCKER_CLI=false",
+        "--build-arg",
+        "WITH_SLOW_DF=false",
+        "-f",
+        "<repo>/tests/integration/images/sshd-ubuntu-24.04/Dockerfile",
+        "-t",
+        "noodara-35-03/sshd:24.04-586ed50e",
+        "<repo>/tests/integration/images"
+      ],
+      "outcome": "success",
+      "elapsedMs": 15653,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "cold",
+      "deadlineMarkersMs": [
+        60000,
+        180000
+      ],
+      "imageIds": [
+        "sha256:b33d6d2074f9070daf6a7cc7814ab59630e102963c67dd85483ebc2a02fdb6d1"
+      ]
+    },
+    {
+      "stage": "container_create",
+      "command": [
+        "docker",
+        "create",
+        "--name",
+        "noodara-35-03-24.04-e54485da",
+        "--label",
+        "noodara.diagnostic.owner=586ed50e",
+        "-p",
+        "<loopback>::22",
+        "--env",
+        "SSH_TEST_PASSWORD",
+        "--env",
+        "SSH_TEST_KEY_PASSPHRASE",
+        "noodara-35-03/sshd:24.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 680,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "container_start",
+      "command": [
+        "docker",
+        "start",
+        "noodara-35-03-24.04-e54485da"
+      ],
+      "outcome": "success",
+      "elapsedMs": 211,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "published_port",
+      "command": [
+        "docker",
+        "port",
+        "noodara-35-03-24.04-e54485da",
+        "22/tcp"
+      ],
+      "outcome": "success",
+      "elapsedMs": 21,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "ssh_readiness",
+      "ubuntu": "24.04",
+      "cache": "cold",
+      "outcome": "success",
+      "elapsedMs": 580,
+      "oracle": "unchanged Server listening on log marker; no browser actions"
+    },
+    {
+      "stage": "cleanup",
+      "command": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "noodara-35-03-24.04-e54485da"
+      ],
+      "outcome": "success",
+      "elapsedMs": 1877,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "image_build",
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "noodara-35-03-586ed50e",
+        "--load",
+        "--progress=quiet",
+        "--build-arg",
+        "WITH_DOCKER_CLI=false",
+        "--build-arg",
+        "WITH_SLOW_DF=false",
+        "-f",
+        "<repo>/tests/integration/images/sshd-ubuntu-24.04/Dockerfile",
+        "-t",
+        "noodara-35-03/sshd:24.04-586ed50e",
+        "<repo>/tests/integration/images"
+      ],
+      "outcome": "success",
+      "elapsedMs": 2068,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "warm",
+      "deadlineMarkersMs": [
+        60000,
+        180000
+      ],
+      "imageIds": [
+        "sha256:b33d6d2074f9070daf6a7cc7814ab59630e102963c67dd85483ebc2a02fdb6d1"
+      ]
+    },
+    {
+      "stage": "container_create",
+      "command": [
+        "docker",
+        "create",
+        "--name",
+        "noodara-35-03-24.04-c1d84f64",
+        "--label",
+        "noodara.diagnostic.owner=586ed50e",
+        "-p",
+        "<loopback>::22",
+        "--env",
+        "SSH_TEST_PASSWORD",
+        "--env",
+        "SSH_TEST_KEY_PASSPHRASE",
+        "noodara-35-03/sshd:24.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 194,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "container_start",
+      "command": [
+        "docker",
+        "start",
+        "noodara-35-03-24.04-c1d84f64"
+      ],
+      "outcome": "success",
+      "elapsedMs": 183,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "published_port",
+      "command": [
+        "docker",
+        "port",
+        "noodara-35-03-24.04-c1d84f64",
+        "22/tcp"
+      ],
+      "outcome": "success",
+      "elapsedMs": 29,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "ssh_readiness",
+      "ubuntu": "24.04",
+      "cache": "warm",
+      "outcome": "success",
+      "elapsedMs": 685,
+      "oracle": "unchanged Server listening on log marker; no browser actions"
+    },
+    {
+      "stage": "cleanup",
+      "command": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "noodara-35-03-24.04-c1d84f64"
+      ],
+      "outcome": "success",
+      "elapsedMs": 1481,
+      "exitCode": 0,
+      "ubuntu": "24.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "image_build",
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "noodara-35-03-586ed50e",
+        "--load",
+        "--progress=quiet",
+        "--build-arg",
+        "WITH_DOCKER_CLI=false",
+        "--build-arg",
+        "WITH_SLOW_DF=false",
+        "-f",
+        "<repo>/tests/integration/images/sshd-ubuntu-22.04/Dockerfile",
+        "-t",
+        "noodara-35-03/sshd:22.04-586ed50e",
+        "<repo>/tests/integration/images"
+      ],
+      "outcome": "success",
+      "elapsedMs": 18627,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "cold",
+      "deadlineMarkersMs": [
+        60000,
+        180000
+      ],
+      "imageIds": [
+        "sha256:6b1adfdaad96c7651d70c401faae2833d23a4c5fd96dc0e6695abf6bad1fdab0"
+      ]
+    },
+    {
+      "stage": "container_create",
+      "command": [
+        "docker",
+        "create",
+        "--name",
+        "noodara-35-03-22.04-295e2a9e",
+        "--label",
+        "noodara.diagnostic.owner=586ed50e",
+        "-p",
+        "<loopback>::22",
+        "--env",
+        "SSH_TEST_PASSWORD",
+        "--env",
+        "SSH_TEST_KEY_PASSPHRASE",
+        "noodara-35-03/sshd:22.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 411,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "container_start",
+      "command": [
+        "docker",
+        "start",
+        "noodara-35-03-22.04-295e2a9e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 233,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "published_port",
+      "command": [
+        "docker",
+        "port",
+        "noodara-35-03-22.04-295e2a9e",
+        "22/tcp"
+      ],
+      "outcome": "success",
+      "elapsedMs": 24,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "ssh_readiness",
+      "ubuntu": "22.04",
+      "cache": "cold",
+      "outcome": "success",
+      "elapsedMs": 424,
+      "oracle": "unchanged Server listening on log marker; no browser actions"
+    },
+    {
+      "stage": "cleanup",
+      "command": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "noodara-35-03-22.04-295e2a9e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 5533,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "cold"
+    },
+    {
+      "stage": "image_build",
+      "command": [
+        "docker",
+        "buildx",
+        "build",
+        "--builder",
+        "noodara-35-03-586ed50e",
+        "--load",
+        "--progress=quiet",
+        "--build-arg",
+        "WITH_DOCKER_CLI=false",
+        "--build-arg",
+        "WITH_SLOW_DF=false",
+        "-f",
+        "<repo>/tests/integration/images/sshd-ubuntu-22.04/Dockerfile",
+        "-t",
+        "noodara-35-03/sshd:22.04-586ed50e",
+        "<repo>/tests/integration/images"
+      ],
+      "outcome": "success",
+      "elapsedMs": 2383,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "warm",
+      "deadlineMarkersMs": [
+        60000,
+        180000
+      ],
+      "imageIds": [
+        "sha256:6b1adfdaad96c7651d70c401faae2833d23a4c5fd96dc0e6695abf6bad1fdab0"
+      ]
+    },
+    {
+      "stage": "container_create",
+      "command": [
+        "docker",
+        "create",
+        "--name",
+        "noodara-35-03-22.04-9f450a46",
+        "--label",
+        "noodara.diagnostic.owner=586ed50e",
+        "-p",
+        "<loopback>::22",
+        "--env",
+        "SSH_TEST_PASSWORD",
+        "--env",
+        "SSH_TEST_KEY_PASSPHRASE",
+        "noodara-35-03/sshd:22.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 174,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "container_start",
+      "command": [
+        "docker",
+        "start",
+        "noodara-35-03-22.04-9f450a46"
+      ],
+      "outcome": "success",
+      "elapsedMs": 452,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "published_port",
+      "command": [
+        "docker",
+        "port",
+        "noodara-35-03-22.04-9f450a46",
+        "22/tcp"
+      ],
+      "outcome": "success",
+      "elapsedMs": 41,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "ssh_readiness",
+      "ubuntu": "22.04",
+      "cache": "warm",
+      "outcome": "success",
+      "elapsedMs": 719,
+      "oracle": "unchanged Server listening on log marker; no browser actions"
+    },
+    {
+      "stage": "cleanup",
+      "command": [
+        "docker",
+        "rm",
+        "-f",
+        "-v",
+        "noodara-35-03-22.04-9f450a46"
+      ],
+      "outcome": "success",
+      "elapsedMs": 2527,
+      "exitCode": 0,
+      "ubuntu": "22.04",
+      "cache": "warm"
+    },
+    {
+      "stage": "owned_image_cleanup",
+      "command": [
+        "docker",
+        "image",
+        "rm",
+        "noodara-35-03/sshd:24.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 2857,
+      "exitCode": 0
+    },
+    {
+      "stage": "owned_image_cleanup",
+      "command": [
+        "docker",
+        "image",
+        "rm",
+        "noodara-35-03/sshd:22.04-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 1424,
+      "exitCode": 0
+    },
+    {
+      "stage": "owned_builder_cleanup",
+      "command": [
+        "docker",
+        "buildx",
+        "rm",
+        "--force",
+        "noodara-35-03-586ed50e"
+      ],
+      "outcome": "success",
+      "elapsedMs": 2280,
+      "exitCode": 0
+    }
+  ],
+  "baseManifestDigests": {
+    "24.04": "sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852",
+    "22.04": "sha256:076e7bf82319619f28dd0aa9c02ab34b055ad37100395b4f49a2ffba04fb5e11"
+  }
+}

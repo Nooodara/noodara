@@ -1,0 +1,192 @@
+{
+  "task": "35-03",
+  "status": "evidence record closed",
+  "claims": {
+    "historicalCiTimeoutCause": "INCONCLUSIVE",
+    "currentCancellationGap": "DEMONSTRATED (controlled held-build reproducer)",
+    "repairedCancellationContract": "VERIFIED by 35-04 RED/GREEN, caller wiring and Docker lifecycle gates only"
+  },
+  "historicalCi": {
+    "sourceCommit": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+    "run": 42743060357,
+    "attempt": 1,
+    "jobs": {
+      "total": 12,
+      "success": 9,
+      "failure": 3,
+      "skipped": 0
+    },
+    "separateFailures": [
+      {
+        "job": "e2e",
+        "jobId": 129588583228,
+        "passed": 284,
+        "failed": 2,
+        "skipped": 0,
+        "failure": "two test timeouts",
+        "artifact": 13730449440,
+        "sameSha256AsProof50": true
+      },
+      {
+        "job": "installer",
+        "jobId": 129588583325,
+        "filesFailed": 1,
+        "filesPassed": 9,
+        "testsPassed": 48,
+        "testsSkipped": 8,
+        "failure": "Ubuntu 22.04 DinD fixture build exceeded 300000 ms (also on diagnostic rebuild)"
+      },
+      {
+        "job": "integration",
+        "jobId": 129588583307,
+        "filesFailed": 1,
+        "filesPassed": 107,
+        "filesSkipped": 3,
+        "testsPassed": 1304,
+        "testsSkipped": 13,
+        "failure": "activity/canary-deploy.test.ts:356 beforeAll Ubuntu 22.04 exceeded 900000 ms"
+      }
+    ],
+    "commonCause": "not proven"
+  },
+  "diagnosticRun": {
+    "commit": "dabdd438463b876cce4702f524fbdac21aa90e30",
+    "parent": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+    "run": 42884716047,
+    "attempt": 1,
+    "jobs": {
+      "total": 2,
+      "success": 2
+    }
+  },
+  "retainedOutsideTree": {
+    "runner-supervisor-process.test.mjs": {
+      "commit": "dabdd438463b876cce4702f524fbdac21aa90e30",
+      "sha256": "302a13fec7b388443bf9efcc5f5ebefcb6f945ece2c77a096ef721c64d4d7f41",
+      "supersededBy": "tests/unit/integration-helpers/ssh-diagnostic-supervisor.test.ts"
+    }
+  },
+  "frozenArchive": {
+    "runner.mjs": "2e50dfd5af12e05af8a997cf776d36e61acd65a9e904e7f1308b20dc24873a56",
+    "runner.config.ts": "649438c5049436678b816956ec5b7b1650c4055a1b34e094661077943cd5dac7",
+    "runner.test.ts": "c458ed3267bdc808744acb477122d7ef6e6867efab1f1ad4c37236cf4467088c"
+  },
+  "sanitization": {
+    "rules": [
+      "full UUIDs -> lowercase 8-hex prefix (aborts on any per-file prefix collision)",
+      "user Docker socket URL -> <user-docker-socket>",
+      "contributor home checkout paths -> <repo>",
+      "loopback IPv4 -> <loopback>"
+    ],
+    "files": {
+      "cancellation-repair-results.json": {
+        "distinctUuids": 12,
+        "before": "30ae93ebce4dea0d282da1b55951267d86adc4afb855dd43db1ae386c3b8500f",
+        "after": "87452cba2799a16ac06b8c992f8ba17ad5cb7cd7452dc84fae1e73f15b7905f9"
+      },
+      "diagnostics-results.json": {
+        "distinctUuids": 0,
+        "before": "d7856086769ba8544d0b5c371d1e4cafddedd05a2bde5c0b7e74964153a0cab7",
+        "after": "51078e485891824660b7ea2a6681c4761555f64aedb6ab44d0ab80fe4e905596"
+      },
+      "local-measurements.json": {
+        "distinctUuids": 5,
+        "before": "5c0b322b9b6822bb5532d6300fd9197cd85c57c9a2d1528e1f06f1f2d4d92836",
+        "after": "bfad95ecfa610f759c5b94888dd6a0d4e306b8a76943cbf3dee38b42b4ca7765"
+      },
+      "runner-observations.json": {
+        "distinctUuids": 4,
+        "before": "18f18376019147462eaa0a32d5cbe459916ec220a0bc95a8c9c00d3eafd2d137",
+        "after": "e6de87b13d1d57f002398c8ebeadfd64cef0e9457a77c32def3bcd3c84392412"
+      }
+    }
+  },
+  "repairSources": {
+    "tests/integration/helpers/ssh.ts": {
+      "recorded35_04": "25bb0cfc7f5c706d19896e59602cfe0815cc050440a2dd58415c720964c924c2",
+      "headCommitted": "50efb3b5c199bf6fe831d586e704424a42248a73e689725e58ed02bcc5e73db1",
+      "unchanged": false
+    },
+    "tests/integration/helpers/container-start.ts": {
+      "recorded35_04": "749ab01c34a3f7b11604379341b6b0bcc3255864a0ade0c3fd120e7dedde86ce",
+      "headCommitted": "749ab01c34a3f7b11604379341b6b0bcc3255864a0ade0c3fd120e7dedde86ce",
+      "unchanged": true
+    },
+    "tests/integration/helpers/port-binding-retry.ts": {
+      "recorded35_04": "f57888a5589904df315b48f8d0974608424cd32738e93c381703761456f126c9",
+      "headCommitted": "f57888a5589904df315b48f8d0974608424cd32738e93c381703761456f126c9",
+      "unchanged": true
+    },
+    "tests/integration/helpers/test-resources.ts": {
+      "recorded35_04": "893d025a31c1c9517d090c2e6b19bc845f8f6ceb45e233cd426ab6f6f36366ea",
+      "headCommitted": "1f3bce877443f775eb70be7bfe766100862f26cef95fd7ee3b678073e72ef374",
+      "unchanged": false
+    },
+    "tests/integration/ssh/fixture-lifecycle.test.ts": {
+      "recorded35_04": "a25b84e26d83240870981c3588a9f6080be4edad99d849fdb116509e8ff27054",
+      "headCommitted": "be7ad03ddd32c8ebb80f8df2887ae4258049ed9f0e65afa048828223e2de37f2",
+      "unchanged": false
+    },
+    "tests/e2e/critical-path.spec.ts": {
+      "recorded35_04": "23ac7a557141e06e050a4fcc16a2c94f4b1810ce671f3ed4724b4781628ab31e",
+      "headCommitted": "23ac7a557141e06e050a4fcc16a2c94f4b1810ce671f3ed4724b4781628ab31e",
+      "unchanged": true
+    },
+    "tests/e2e/discovery.spec.ts": {
+      "recorded35_04": "cfc3a3a6632c0f8c14ab3f1427f262be053beb66f5f9b32f62aeafb6c1f39adc",
+      "headCommitted": "cfc3a3a6632c0f8c14ab3f1427f262be053beb66f5f9b32f62aeafb6c1f39adc",
+      "unchanged": true
+    },
+    "tests/e2e/fixtures/stack.ts": {
+      "recorded35_04": "db2e3a9a550e64502c28e593ac219199798ca012461f533e69e27345c12253bf",
+      "headCommitted": "802c6c890a90933a8acae0cc3f6007277d9e99b8843d2ba9beb50ddaa558b0d8",
+      "unchanged": false
+    },
+    "tests/unit/integration-helpers/ssh-cancellation.test.ts": {
+      "recorded35_04": "2d4b358a2b09967da7470cdc27cede6213776ec79ee4e76f1c0b148fa6e79967",
+      "headCommitted": "2d4b358a2b09967da7470cdc27cede6213776ec79ee4e76f1c0b148fa6e79967",
+      "unchanged": true
+    },
+    "tests/unit/integration-helpers/ssh-diagnostics.test.ts": {
+      "recorded35_04": "e111a0be80a2993136519891a8c100de7aaec7547aeaecb44bfd2094b08dccfd",
+      "headCommitted": "e111a0be80a2993136519891a8c100de7aaec7547aeaecb44bfd2094b08dccfd",
+      "unchanged": true
+    },
+    "tests/unit/integration-helpers/ssh-stage-events.test.ts": {
+      "recorded35_04": "6c779d4102bba1517d25a8cb69cd56918881879c871daf2cbcfbc972329536e7",
+      "headCommitted": "6c779d4102bba1517d25a8cb69cd56918881879c871daf2cbcfbc972329536e7",
+      "unchanged": true
+    },
+    "tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts": {
+      "recorded35_04": "9b8ab54ead72cbe187dce58d41b00158b1ff248fe8b7d3fee7b3651d3f8e13ba",
+      "headCommitted": "e6cd013a70f7de94c9fa7de82904d21340929025d2563ec557c9654790705208",
+      "unchanged": false
+    },
+    "tests/unit/integration-helpers/port-binding-retry.test.ts": {
+      "recorded35_04": "7f362919bfd31478b62abe5f5c46f4eae88672ed26857ee8267f437b60dce167",
+      "headCommitted": "7f362919bfd31478b62abe5f5c46f4eae88672ed26857ee8267f437b60dce167",
+      "unchanged": true
+    }
+  },
+  "files": {
+    "cancellation-repair-results.json": "87452cba2799a16ac06b8c992f8ba17ad5cb7cd7452dc84fae1e73f15b7905f9",
+    "cancellation-repair.md": "4cd74db1429bb14a0c7a1b710507f739bb76d318c3936937b2f058f2a2fd2074",
+    "ci-43043093057-attempt1.json": "e12a40d884f1cd9f92b3aabc35236ab670a5943f5d5ddedceb26fa22db57bc8e",
+    "ci-jobs.json": "9d9cae9efe27ff5bd4d18c9f21e6387ff9d84947e7228f84eb38885ff1f559d2",
+    "ci-run.json": "36d7671768bb5e175fe0c5470bad2ba68608df0d1a45c4a6cea319262317283b",
+    "ci-summary.json": "e095ca81d81a2f7293f9dcd7aa768242b03d2fcaba1e65ade96f4217688af260",
+    "diagnostics-results.json": "51078e485891824660b7ea2a6681c4761555f64aedb6ab44d0ab80fe4e905596",
+    "local-measurements.json": "bfad95ecfa610f759c5b94888dd6a0d4e306b8a76943cbf3dee38b42b4ca7765",
+    "runner-observations.json": "e6de87b13d1d57f002398c8ebeadfd64cef0e9457a77c32def3bcd3c84392412",
+    "runner.config.ts": "649438c5049436678b816956ec5b7b1650c4055a1b34e094661077943cd5dac7",
+    "runner.mjs": "2e50dfd5af12e05af8a997cf776d36e61acd65a9e904e7f1308b20dc24873a56",
+    "runner.test.ts": "c458ed3267bdc808744acb477122d7ef6e6867efab1f1ad4c37236cf4467088c",
+    "supervisor-results.json": "efc7a07c84a27ec7c10a686e5fbc0b8356407bf537ca283389170540bff60c86"
+  },
+  "limitations": [
+    "exact resolved historical platform/base-image ID unavailable; mutable manifest digests are not that identity",
+    "no cold/warm, ARM64/AMD64 or BuildKit/legacy-build equivalence asserted",
+    "container_start and published_port intervals overlap (single Testcontainers hook)",
+    "not every possible external record is claimed exhausted"
+  ]
+}

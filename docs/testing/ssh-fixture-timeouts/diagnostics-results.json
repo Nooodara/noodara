@@ -1,0 +1,69 @@
+{
+  "status": "partial-instrumentation-only",
+  "runner": "/usr/local/bin/node node_modules/vitest/vitest.mjs run tests/unit/integration-helpers/ssh-diagnostics.test.ts tests/unit/integration-helpers/ssh-stage-events.test.ts",
+  "pnpm_attempt": "Version-manager fetch/signature verification unavailable in restricted network; no successful RED credited to it.",
+  "collector_red": "Baseline restored temporarily after collector prototype; missing-export failure observed, not strict initial RED-first.",
+  "milestones_red": {
+    "failed": 2,
+    "passed": 0
+  },
+  "runtime_allowlist_red": {
+    "failed": 1,
+    "passed": 9
+  },
+  "focused_green": {
+    "files": 2,
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ssh_typecheck": {
+    "command": "/usr/local/bin/node node_modules/typescript/bin/tsc -p tests/integration/ssh/tsconfig.json --noEmit",
+    "exit_code": 0
+  },
+  "authoritative_gates": "pending-root",
+  "cold_build": "isolated BuildKit Linux ARM64 comparison complete; see local-measurements.json; fixture uses legacy API, original CI AMD64 remains unproven",
+  "docker_lifecycle_proof": {
+    "command": "DOCKER_HOST=<user-docker-socket> TESTCONTAINERS_HOST_OVERRIDE=<loopback> TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock /usr/local/bin/node node_modules/vitest/vitest.mjs run --config .agent-flow/handoffs/35-03/lifecycle.config.ts",
+    "config": {
+      "include": [
+        "tests/integration/ssh/fixture-lifecycle.test.ts"
+      ],
+      "testTimeout": 120000,
+      "hookTimeout": 120000,
+      "fileParallelism": false
+    },
+    "initial_result": {
+      "passed": 1,
+      "failed": 1,
+      "reason": "evidence harness compared truncated docker ps ID with full Testcontainers ID; not a behavioral RED"
+    },
+    "verified_result": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 38120
+    },
+    "proof": [
+      "actual start/stop succeeds despite throwing sink; repeated stop safe; foreign TCP listener remains usable",
+      "held actual image build demonstrates a container can appear after simulated outer deadline; reproducer joins and reaps late operation"
+    ],
+    "a5_status": "NOT SATISFIED: current helper does not receive outer cancellation and can continue startup; controlled proof is a gap diagnosis, not repair or original CI cause",
+    "test_source_sha256": "651ec338644c6b33fd33b21c9ccd94f6905443caabe1f3cc3baa2810125a4f34"
+  },
+  "ssh_cause": "unproven",
+  "cleanup_diagnostics_red": {
+    "failed": 1,
+    "passed": 5,
+    "reason": "missing cleanup stage emission on startup rejection before observational instrumentation"
+  },
+  "h1_lifecycle_unit": {
+    "passed": 3,
+    "cases": [
+      "throwing sink",
+      "backpressured sink",
+      "unsettled Promise sink"
+    ],
+    "result": "startup and repeated stop preserved"
+  }
+}

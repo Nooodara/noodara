@@ -1,0 +1,52 @@
+{
+  "review_request": "R1 behavioral supervisor boundary coverage; no publication approval",
+  "commands": {
+    "behavioral": "node --test tests/unit/integration-helpers/runner-supervisor.test.mjs docs/testing/ssh-fixture-timeouts/runner-supervisor-process.test.mjs",
+    "collection": "SSH_DIAGNOSTIC_UBUNTU=24.04 node node_modules/vitest/vitest.mjs list --no-static-parse --config docs/testing/ssh-fixture-timeouts/runner.config.ts"
+  },
+  "red": [
+    {
+      "evidence": ".agent-flow/handoffs/35-03/supervisor-red.log",
+      "tests": 13,
+      "passed": 4,
+      "failed": 9,
+      "meaning": "Actual unchanged reviewed supervisor executes against controlled platform boundaries. Parser/normal cleanup already pass; sink, process failure and race behaviors fail."
+    },
+    {
+      "evidence": ".agent-flow/handoffs/35-03/supervisor-forcekill-red.log",
+      "tests": 14,
+      "passed": 13,
+      "failed": 1,
+      "meaning": "Force-kill deadline without child close did not finalize cleanup."
+    },
+    {
+      "evidence": ".agent-flow/handoffs/35-03/supervisor-owner-red.log",
+      "tests": 15,
+      "passed": 14,
+      "failed": 1,
+      "meaning": "Array owner admitted and cleanup-owner set unbounded beyond two expected fixture calls."
+    }
+  ],
+  "green": {
+    "evidence": ".agent-flow/handoffs/35-03/supervisor-green.log",
+    "tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "kinds": "15 controlled VM executions of exact entrypoint with only Node platform imports substituted; 2 actual Node entrypoint/pipe/child-process executions with import-loader-controlled Docker and Vitest child."
+  },
+  "source_changes": [
+    "Permanently disable output on error/backpressure without queuing; consume asynchronous sink errors.",
+    "Catch Docker and synchronous spawn failures without raw exception serialization; preserve asynchronous spawn failure across close.",
+    "Idempotent terminal cleanup; TERM exceptions cannot prevent KILL; retain group escalation on TERM-close race; finalize at force-kill even if close never arrives.",
+    "Enforce string UUID owner and maximum two distinct owners for the fixed cold/warm diagnostic suite."
+  ],
+  "limits": [
+    "Controlled subprocess tests do not invoke Docker; Docker responses are injected.",
+    "Fake-time signal assertions demonstrate requested process-group operations, not real Docker cancellation or guaranteed descendant absence.",
+    "Two owner records can require at most six bounded 30-second Docker cleanup commands; no global prune or foreign names.",
+    "Real config collection imports actual fixture module and collects cold/warm without executing fixture bodies.",
+    "Historical SSH cause remains unproven; A3 real-runner evidence prospective; A4 and A5 remain incomplete.",
+    "New Node tests are invoked explicitly and in isolated candidate workflow; root pnpm test glob does not include .mjs. Root owns authoritative gates."
+  ]
+}
