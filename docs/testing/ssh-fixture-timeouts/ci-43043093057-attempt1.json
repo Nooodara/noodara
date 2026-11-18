@@ -1,0 +1,57 @@
+{
+  "schema": "noodara.ssh-fixture-timeouts.ci-attempt-evidence/1",
+  "immutable": true,
+  "note": "Recorded as evidence only. Not rerun; a repair must be proven by a new CI run on its own exact SHA. No job failure here is labelled fixed by task 35-04 except the unit repair defect (A7).",
+  "commit": "19c4fd7023714c76ddf7ade28b76d558743b04df",
+  "push_triggered_runs": [
+    { "workflow": "CI", "run_id": 43043093057, "run_attempt": 1 },
+    { "workflow": "Publish site", "run_id": 43043093098, "run_attempt": 1 }
+  ],
+  "counts": {
+    "jobs": 13,
+    "success": 8,
+    "failure": 5,
+    "breakdown": "CI 43043093057: 12 jobs, 7 success / 5 failure; Publish site 43043093098: 1 job (deploy), success"
+  },
+  "jobs": [
+    { "run_id": 43043093057, "job": "site", "job_id": 130599798962, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "lint", "job_id": 130599799008, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "typecheck", "job_id": 130599799143, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "ai-evals", "job_id": 130599799154, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "boundaries", "job_id": 130599799207, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "state-machine", "job_id": 130599799374, "conclusion": "success" },
+    { "run_id": 43043093057, "job": "boot-smoke", "job_id": 130599799809, "conclusion": "success" },
+    { "run_id": 43043093098, "job": "deploy", "job_id": 130599785245, "conclusion": "success" },
+    {
+      "run_id": 43043093057, "job": "unit", "job_id": 130599799155, "conclusion": "failure",
+      "classification": "repair-defect",
+      "observed": "2 failed tests in tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts: the real-Playwright subprocess loaded tests/e2e/fixtures/stack.ts, whose graph reaches apps/control-plane and @noodara/domain dist (\"Cannot find module .../@noodara/domain/dist/server/index.js\", \"No tests found\"); the unit job runs pnpm test without a build step",
+      "covered_by": "35-04 A7"
+    },
+    {
+      "run_id": 43043093057, "job": "e2e", "job_id": 130599799332, "conclusion": "failure",
+      "classification": "runner-dns",
+      "observed": "Playwright browser dependency install failed: Temporary failure resolving security.ubuntu.com (26), archive.ubuntu.com (13), azure.archive.ubuntu.com (13); no E2E test executed",
+      "fixed_by_this_task": false
+    },
+    {
+      "run_id": 43043093057, "job": "security", "job_id": 130599799356, "conclusion": "failure",
+      "classification": "runner-dns",
+      "observed": "Playwright browser dependency install failed: Temporary failure resolving security.ubuntu.com (26), archive.ubuntu.com (13), azure.archive.ubuntu.com (13)",
+      "fixed_by_this_task": false
+    },
+    {
+      "run_id": 43043093057, "job": "installer", "job_id": 130599799069, "conclusion": "failure",
+      "classification": "runner-dns",
+      "observed": "installer-dind image builds (Ubuntu 22.04/24.04) failed: Could not resolve archive.ubuntu.com (180), security.ubuntu.com (60); diagnostic rebuild exit 100",
+      "fixed_by_this_task": false
+    },
+    {
+      "run_id": 43043093057, "job": "integration", "job_id": 130599799364, "conclusion": "failure",
+      "classification": "cause-not-established",
+      "observed": "16 test files failed with \"Failed to build image\" in the same time window as the DNS failures; the logs do not establish the cause",
+      "fixed_by_this_task": false
+    }
+  ],
+  "sources": "Job conclusions for site/lint/typecheck/ai-evals/unit/boundaries/state-machine/boot-smoke/deploy come from the retained API observation; e2e/security/installer/integration were in progress at that snapshot and their failure is taken from the orchestrator's final run record (8 success / 5 failure) and each retained job log ending in ##[error]. Raw logs are retained locally outside the publication allowlist."
+}

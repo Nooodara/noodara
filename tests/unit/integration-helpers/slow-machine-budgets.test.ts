@@ -21,7 +21,18 @@ const SCOPE_FILES = [
   'tests/integration/helpers/test-resources.ts',
   'tests/integration/helpers/test-resources.test.ts',
   'tests/integration/helpers/ssh.ts',
+  // 35-04 scale leg: the real-Playwright subprocess bound and its case budget. Only the outer
+  // bounds are in scope; the inner spec budgets (200 ms, 1000 -> 6000 ms) live in generated
+  // source strings, are what the test is about, and are never scaled.
+  'tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts',
 ] as const;
+
+/** Child-process calls whose options-object `timeout` bounds a real subprocess. */
+const SUBPROCESS_CALLEES = new Set(['spawnSync', 'execFileSync', 'execSync']);
+/** Scope files whose subprocess bounds are also held to scaled() (opt-in per file, 35-04). */
+const SUBPROCESS_SCOPE_FILES = new Set<string>([
+  'tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts',
+]);
 
 /** Unscaled on purpose, each a named and documented bound:
  *  - LIFECYCLE_STOP_SETTLE_CAP_MS: stop() fail-closed cap delivered by 35-04 (semantics untouched);
@@ -68,7 +79,7 @@ function timeoutOf(options: ts.ObjectLiteralExpression): ts.Expression | undefin
 }
 
 /** Returns one `file:line kind budget` entry per unbounded or unscaled budget. */
-function findUnscaledBudgets(fileName: string, text: string): string[] {
+function findUnscaledBudgets(fileName: string, text: string, subprocessBounds = SUBPROCESS_SCOPE_FILES.has(fileName)): string[] {
   const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const problems: string[] = [];
   const report = (kind: string, node: ts.Expression): void => {
@@ -96,6 +107,12 @@ function findUnscaledBudgets(fileName: string, text: string): string[] {
       } else if (ts.isIdentifier(node.expression) && node.expression.text === 'setTimeout') {
         const arg = args[1];
         if (arg !== undefined) report('setTimeout', arg);
+      } else if (subprocessBounds && ts.isIdentifier(node.expression) && SUBPROCESS_CALLEES.has(node.expression.text)) {
+        for (const arg of args) {
+          if (!ts.isObjectLiteralExpression(arg)) continue;
+          const timeout = timeoutOf(arg);
+          if (timeout !== undefined) report(node.expression.text, timeout);
+        }
       }
     }
     ts.forEachChild(node, visit);
@@ -134,6 +151,7 @@ describe('slow-machine budgets (36-02 H4)', () => {
       'tests/integration/ssh/contracts.test.ts',
       'tests/integration/helpers/leak-guard-setup.ts',
       'tests/integration/helpers/ssh.ts',
+      'tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts',
     ]));
   });
 
@@ -148,8 +166,10 @@ describe('slow-machine budgets (36-02 H4)', () => {
     ['hook literal', "afterEach(async () => {}, 90_000);", 'afterEach budget 90_000'],
     ['bare setTimeout literal', "setTimeout(() => {}, 10_000);", 'setTimeout budget 10_000'],
     ['concurrent modifier literal', "it.concurrent('x', async () => {}, 1);", 'it budget 1'],
+    ['spawnSync timeout literal', "spawnSync('node', [], { cwd, timeout: 15_000 });", 'spawnSync budget 15_000'],
+    ['execFileSync unscaled name', "execFileSync('node', [], { timeout: BOUND_MS });", 'execFileSync budget BOUND_MS'],
   ])('flags a %s', (_label, snippet, expected) => {
-    const problems = findUnscaledBudgets('snippet.ts', snippet);
+    const problems = findUnscaledBudgets('snippet.ts', snippet, true);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain(expected);
   });
@@ -161,8 +181,11 @@ describe('slow-machine budgets (36-02 H4)', () => {
     'setTimeout(resolve, options.settleMs);',
     'setTimeout(() => {}, LIFECYCLE_STOP_SETTLE_CAP_MS);',
     'socket.setTimeout(1000, () => {});',
+    "spawnSync('node', [], { cwd, timeout: scaled(PLAYWRIGHT_SUBPROCESS_BUDGET_MS) });",
+    // A config object handed to JSON.stringify (e.g. the inner Playwright timeout) is not a bound.
+    "writeFileSync(file, JSON.stringify({ timeout: 1000 }));",
   ])('accepts %s', (snippet) => {
-    expect(findUnscaledBudgets('snippet.ts', snippet)).toEqual([]);
+    expect(findUnscaledBudgets('snippet.ts', snippet, true)).toEqual([]);
   });
 
   it.each([
@@ -171,9 +194,27 @@ describe('slow-machine budgets (36-02 H4)', () => {
     ['tests/integration/helpers/leak-guard-setup.ts', 'LEAK_GUARD_HOOK_BUDGET_MS', 180_000],
     ['tests/integration/helpers/ssh.ts', 'SSH_FIXTURE_REAP_BUDGET_MS', 90_000],
     ['tests/integration/helpers/ssh.ts', 'LIFECYCLE_STOP_SETTLE_CAP_MS', 30_000],
+    ['tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts', 'PLAYWRIGHT_SUBPROCESS_BUDGET_MS', 15_000],
+    ['tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts', 'PLAYWRIGHT_CASE_BUDGET_MS', 20_000],
   ] as const)('%s keeps %s at its unscaled %d ms, identical with the scale unset', (file, name, ms) => {
     const value = constantValue(file, name);
     expect(value).toBe(ms);
     expect(scaleTimeout(ms, 1)).toBe(ms);
+  });
+
+  it('the real-Playwright subprocess bound is scaled(15_000) and its case budget scaled(20_000)', () => {
+    const file = 'tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts';
+    const text = readFileSync(path.join(root, file), 'utf8');
+    // Both cases: the spawnSync bound and the it() budget route through the runner scale.
+    expect([...text.matchAll(/timeout: scaled\(PLAYWRIGHT_SUBPROCESS_BUDGET_MS\)/g)]).toHaveLength(2);
+    expect([...text.matchAll(/\}, scaled\(PLAYWRIGHT_CASE_BUDGET_MS\)\);/g)]).toHaveLength(2);
+    expect(text).toMatch(/resolveRunnerTimeoutScale\('vitest'\)\.scaled\(ms\)/);
+    // With NOODARA_TEST_TIMEOUT_SCALE=3 the subprocess may run 45 s inside a 60 s case;
+    // the subprocess bound stays below the case budget at every factor.
+    expect(scaleTimeout(15_000, 3)).toBe(45_000);
+    expect(scaleTimeout(20_000, 3)).toBe(60_000);
+    for (const factor of [1, 1.5, 3, 10]) {
+      expect(scaleTimeout(15_000, factor)).toBeLessThan(scaleTimeout(20_000, factor));
+    }
   });
 });
