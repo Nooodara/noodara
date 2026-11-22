@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
-status: phase_35_active
-stopped_at: 35-04/35-03 done and merged in 8f746de9; 35-02 local docs/evidence updated; final docs SHA push plus full CI/Publish site and phase35 review pending
-last_updated: 2026-11-22T05:14:16.000Z
-last_activity: 2026-11-21 -- 35-02 local pass: read-only remote re-collection (gate log 51), docs/state reconciled; no push/CI/tag
+status: complete
+stopped_at: phase 35 complete; 35-02 gates passed, independent tier-1 review PASS (0 blocking), advance done; v0.5 plan complete; final docs SHA 34b81ddd (gate log 52)
+last_updated: 2026-11-22T12:00:00.000Z
+last_activity: 2026-11-22 -- 35-02 closure: authoritative gates PASS, tier-1 phase35 review PASS, agent-flow advance; phase 35 complete, v0.5 plan complete
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 54
-  completed_plans: 53
-  percent: 98
+  completed_plans: 54
+  percent: 100
 ---
 
 # Project State
@@ -21,9 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase35 activa.35-01 publicó stable `v0.5.2` sobre el RC aprobado exacto `3a34f0daa0a045c48039b2edc882d5ba3bf90fba`; objeto `b852e4a29a18ed837a1b11e06e7b904fed051ed4`. Release42740774327 completed/success10/10 attempt1, release estable no-draft/no-prerelease y Latest. Ambas imágenes públicas amd64/arm64 con provenance real checkout/build-output36; stable digests34/43 iguales antes/después UAT y coherentes con imágenes instaladas arm6439. Backup/restore32 PASS; instalador tag estable35, health0.5.2, admin auth41 e H2 simulado40 PASS; HTTP38 tail24/follow cancel23/end56,8 variantes en ambos streams y0plaintext. Datos/migraciones/cifrados/BYOK preservados; fixtures/contenedores/log-processes0, listeners/workspaces ajenos conservados. Resolución default instalador tag sin override37=0.5.2, sin instalación adicional. Publishers finales activos0/dispatch0 e históricos6 tags sin cambios42. Evidencia manual44 PASS; cinco gates autoritativos35-01 PASS y avance real antes de commit1baf2318.35-02 y revisión independiente final pendientes; overall phase35 NOT READY. Sin llamadas externas a provider; AI-live opcional histórico NOT EXECUTED.
+**Current focus:** Phase35 completa; plan v0.5 completo (11/11 fases, 54/54 tareas).35-01 publicó stable `v0.5.2` sobre el RC aprobado exacto `3a34f0daa0a045c48039b2edc882d5ba3bf90fba`; objeto `b852e4a29a18ed837a1b11e06e7b904fed051ed4`. Release42740774327 completed/success10/10 attempt1, release estable no-draft/no-prerelease y Latest. Ambas imágenes públicas amd64/arm64 con provenance real checkout/build-output36; stable digests34/43 iguales antes/después UAT y coherentes con imágenes instaladas arm6439. Backup/restore32 PASS; instalador tag estable35, health0.5.2, admin auth41 e H2 simulado40 PASS; HTTP38 tail24/follow cancel23/end56,8 variantes en ambos streams y0plaintext. Datos/migraciones/cifrados/BYOK preservados; fixtures/contenedores/log-processes0, listeners/workspaces ajenos conservados. Resolución default instalador tag sin override37=0.5.2, sin instalación adicional. Publishers finales activos0/dispatch0 e históricos6 tags sin cambios42. Evidencia manual44 PASS; cinco gates autoritativos35-01 PASS y avance real antes de commit1baf2318.35-02 cerrada: gates autoritativos PASS y revisión independiente tier1 PASS; phase35 CLOSED. Sin llamadas externas a provider; AI-live opcional histórico NOT EXECUTED.
 
-## Current 35-02 position — 2026-11-21
+## Current 35-02 position — 2026-11-22
+
+CLOSED: 35-02 authoritative gates passed (release-v052, test, typecheck, lint, site-build); independent tier-1 phase35 review PASS, 0 blocking (.agent-flow/review-35.verdict.json); `agent-flow advance` marked 35-02 done and phase35 complete; v0.5 plan complete. REL-05 complete. `34b81ddd` stays the recorded A3 SHA; later evidence commits move main past it. Text below is the pre-closure checkpoint.
+
+Supersedes the 2026-11-21 position below. Local work was committed as `f9c47188` and merged through
+PR #3 as `34b81ddd` (first parent `8f746de9`, tree identical to `f9c47188`); remote main = `34b81ddd`.
+CI44994161467 (push, main, attempt1) success with all 12 workflow jobs successful, including
+integration, installer and security; Publish site44994161414 success (production deployment at
+`34b81ddd`). PR CI44989141640 on `f9c47188`: 11 success, installer skipped (push-to-main only);
+supporting only. Evidence: docs/releases/v0.5.2-gate-logs/52-final-docs-sha-ci-publish.json. A3
+CI/site requirement met at the exact final SHA; earlier failed attempts stay preserved. Stable
+`v0.5.2` unchanged. (Pre-closure: REL-05 was open pending root gates, review and advance; now done.) Nightly ADR 0010 A2 and phase15/OPS-05 debt remain open and unrelated.
+
+## Previous 35-02 position — 2026-11-21 (historical)
 
 Supersedes the 2026-11-10 replan/blocker checkpoints below; those are historical. 35-01, 35-04 and
 35-03 are done; phase36 is done. Selected phases 26–36: 10/11 phases and 53/54 tasks done (35-02 active).
@@ -60,7 +73,7 @@ Fresh planning query2026-11-10T03:22:25Z: docsCI9/12success, E2E failed and inst
 ## Current Position
 
 Phase:35 active — stable distribution verified; 35-01 gates PASS and advanced complete.
-Plan:34-01 done →34-02 done →phase34 review PASS →35-01 done →35-04 done →35-03 done →35-02 active (final docs SHA CI/site pending) →phase35 review pending.
+Plan:34-01 done →34-02 done →phase34 review PASS →35-01 done →35-04 done →35-03 done →35-02 active (final docs SHA CI/site PASS at 34b81ddd; review pending) →phase35 review pending.
 Status:10/11 phases y53/54 plans avanzados completos (26–36; fase36 cerrada); no cambio inferido del plan. Stable v0.5.2 Latest y UAT PASS acreditados en docs/releases/v0.5.2-gate-logs/30–44; 35-01 cinco gates PASS y avance real antes de commit1baf2318. REL-04 completo; REL-05 pendiente35-02. Preservar los skips reales de evidencia candidata28; AI-live NO EJECUTADO, nunca live PASS. No tests/nightly duplicados ni provider calls nuevos.
 
 Last activity: 2026-11-08 — v0.5.1: CI 42443547066 attempt2 12/12 (E2E286/286), nightly 42443546664 16/16 (E2E20x286=5720, 15466s), Release 42460990499; Lima upgrade preserves data/BYOK, H2 canary GREEN and live Anthropic smoke PASS. First CI E2E transport failure retained in evidence; no assertions weakened. Gate docs/releases/v0.5.1-gate.md READY.
@@ -732,12 +745,12 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 ## Session Continuity
 
 Last session: 2026-11-10T02:59:08.419593+00:00
-Stopped at:35-02 local pass 2026-11-21: gate log51 recorded; final docs commit push and exact-SHA full CI/Publish site pending (publication step needs user confirmation).
-Resume file: docs/releases/v0.5.2-gate.md#final-repairdocs-source-status--2026-11-21 (durable); older .agent-flow/handoffs/35-02/CONTINUE.md is historical
+Stopped at:35-02 continuation 2026-11-22: gate log52 recorded (34b81ddd CI44994161467 12/12 success, Publish site44994161414 success); root gates and independent tier1 phase35 review pending.
+Resume file: docs/releases/v0.5.2-gate.md#final-docs-sha-ci-and-publish-site--2026-11-22 (durable); older .agent-flow/handoffs/35-02/CONTINUE.md is historical
 
 ## Operator Next Steps
 
-1. Commit local de35-02, push a main (con confirmación del usuario) y registrar CI completo + Publish site exitosos en el SHA exacto; luego gates root, revisión tier1 independiente fase35 y advance. Si CI vuelve a fallar (audit u otro job), REL-05 sigue abierto y la reparación requiere plan propio. (Histórico:) Ejecutar `/flow-orchestrate` desde35-04. Hardening independiente del reordenamiento completo,0adiciones; criterios previos conservados. Detalle en35-ssh-fixture-timeouts.md. No finalizar35-02 ni reintentar CI sin diagnóstico/justificación; los criterios de causa, corrección y CI exitoso siguen pendientes. Revisión tier1 independiente final sigue pendiente.
+1. HECHO 2026-11-22: `34b81ddd` en main con CI44994161467 12/12 y Publish site44994161414 exitosos (gate log52). Siguiente: gates root, revisión tier1 independiente fase35 y advance. Si CI vuelve a fallar (audit u otro job), REL-05 sigue abierto y la reparación requiere plan propio. (Histórico:) Ejecutar `/flow-orchestrate` desde35-04. Hardening independiente del reordenamiento completo,0adiciones; criterios previos conservados. Detalle en35-ssh-fixture-timeouts.md. No finalizar35-02 ni reintentar CI sin diagnóstico/justificación; los criterios de causa, corrección y CI exitoso siguen pendientes. Revisión tier1 independiente final sigue pendiente.
 2. No mover tags ni reconstruir misma versión; mantener datos/BYOK/backups y procesos ajenos. Stable source es el RC aprobado exacto, nunca HEAD documental posterior. OPS-05/phase15 permanece fuera de alcance.
 
 ## Current35-03 runner checkpoint — 2026-11-10T19:26Z

@@ -1,0 +1,220 @@
+{
+  "schema": "noodara.v0.5.2.gate-log.52",
+  "task": "35-02",
+  "criterion": "A3",
+  "collectedAt": "2026-11-22",
+  "method": "read-only gh run view / gh api deployments / git queries; no push, rerun, dispatch, tag, publication or provider call",
+  "note": "Docs-publication evidence for the final docs source. Distinct from candidate/stable validation evidence and from failed historical attempts (b8b1c042 CI 42743060357 attempt 1, gate log 50), which remain preserved unchanged.",
+  "finalDocsSource": {
+    "sha": "34b81ddd2aa9fbf6c7ada302ee8160f239562acd",
+    "kind": "merge commit of PR #3 on main",
+    "firstParent": "8f746de9d044cafb1dc785a498036193bdb27e7c",
+    "secondParent": "f9c47188826495717a41a38fa61c507a1d81fac5",
+    "tree": "5e05e292b3f23330d154074b2b071586fba4f8df",
+    "treeIdenticalToSecondParent": true,
+    "remoteMainAtCollection": "34b81ddd2aa9fbf6c7ada302ee8160f239562acd",
+    "firstParentSinceStable": [
+      "34b81ddd Merge pull request #3 from Nooodara/docs/v0.5.2-final-distribution",
+      "8f746de9 Merge pull request #2 from Nooodara/feat/v0.5-ssh-cancellation-repair",
+      "784ca1b6 Merge pull request #1 from Nooodara/feat/v0.5-contributor-test-tiers",
+      "19c4fd70 fix(test): preserve SSH fixtures across runner budget extensions",
+      "b8b1c042 docs(release): recommend v0.5.2 and publish stable redaction evidence"
+    ],
+    "filesChangedVsFirstParent": 20
+  },
+  "stableTag": {
+    "v0.5.2": {
+      "object": "b852e4a29a18ed837a1b11e06e7b904fed051ed4",
+      "peeled": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba"
+    },
+    "unchanged": true
+  },
+  "ciWorkflowJobsDefined": 12,
+  "fullCiOnFinalSha": {
+    "attempt": 1,
+    "branch": "main",
+    "conclusion": "success",
+    "createdAt": "2026-11-22T06:32:11Z",
+    "event": "push",
+    "headSha": "34b81ddd2aa9fbf6c7ada302ee8160f239562acd",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 137121477681,
+        "name": "state-machine"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477804,
+        "name": "unit"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477808,
+        "name": "lint"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477821,
+        "name": "boundaries"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477841,
+        "name": "e2e"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477853,
+        "name": "ai-evals"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477855,
+        "name": "boot-smoke"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477857,
+        "name": "installer"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477874,
+        "name": "typecheck"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477899,
+        "name": "site"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477926,
+        "name": "security"
+      },
+      {
+        "conclusion": "success",
+        "id": 137121477938,
+        "name": "integration"
+      }
+    ],
+    "run": 44994161467,
+    "status": "completed",
+    "updatedAt": "2026-11-22T07:43:49Z",
+    "url": "https://github.com/Nooodara/noodara/actions/runs/44994161467",
+    "workflow": "CI",
+    "jobCount": 12,
+    "allJobsSuccess": true
+  },
+  "publishSiteOnFinalSha": {
+    "attempt": 1,
+    "branch": "main",
+    "conclusion": "success",
+    "createdAt": "2026-11-22T06:32:11Z",
+    "event": "push",
+    "headSha": "34b81ddd2aa9fbf6c7ada302ee8160f239562acd",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 137121477537,
+        "name": "deploy"
+      }
+    ],
+    "run": 44994161414,
+    "status": "completed",
+    "updatedAt": "2026-11-22T06:33:09Z",
+    "url": "https://github.com/Nooodara/noodara/actions/runs/44994161414",
+    "workflow": "Publish site",
+    "productionDeployment": {
+      "id": 7975007889,
+      "environment": "production",
+      "sha": "34b81ddd2aa9fbf6c7ada302ee8160f239562acd",
+      "createdAt": "2026-11-22T06:32:12Z"
+    }
+  },
+  "prCiOnSecondParent": {
+    "attempt": 1,
+    "branch": "docs/v0.5.2-final-distribution",
+    "conclusion": "success",
+    "createdAt": "2026-11-22T05:22:37Z",
+    "event": "pull_request",
+    "headSha": "f9c47188826495717a41a38fa61c507a1d81fac5",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 137106149621,
+        "name": "typecheck"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149821,
+        "name": "boundaries"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149841,
+        "name": "boot-smoke"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149845,
+        "name": "site"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149852,
+        "name": "lint"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149870,
+        "name": "unit"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149882,
+        "name": "integration"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149887,
+        "name": "security"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149888,
+        "name": "ai-evals"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149965,
+        "name": "e2e"
+      },
+      {
+        "conclusion": "success",
+        "id": 137106149983,
+        "name": "state-machine"
+      },
+      {
+        "conclusion": "skipped",
+        "id": 137106150874,
+        "name": "installer"
+      }
+    ],
+    "run": 44989141640,
+    "status": "completed",
+    "updatedAt": "2026-11-22T06:12:19Z",
+    "url": "https://github.com/Nooodara/noodara/actions/runs/44989141640",
+    "workflow": "CI",
+    "jobCount": 12,
+    "successJobs": 11,
+    "skipped": [
+      "installer"
+    ],
+    "skipReason": "installer job runs on push to main and nightly only; it is proven on the final SHA by run 44994161467",
+    "role": "supporting only; not substituted for full CI on the final SHA"
+  },
+  "correction": "Dispatcher brief stated 13 jobs; the CI workflow defines and run 44994161467 contains 12 jobs, all success.",
+  "result": "A3 CI/Publish-site evidence on exact final docs SHA: PASS. Phase 35 independent tier-1 review still pending (A4)."
+}
