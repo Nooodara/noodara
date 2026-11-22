@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5
 milestone_name: Observability + AI Read-Only
-status: phase_34_active
-stopped_at: 34-01 complete with ten authoritative gates PASS; 34-02 RC validation next
-last_updated: 2026-11-09T17:06:58.774535Z
-last_activity: 2026-11-09 -- 34-01 prepared0.5.2 and passed all ten gates; RC publication still pending
+status: phase_35_active
+stopped_at: 35-04/35-03 done and merged in 8f746de9; 35-02 local docs/evidence updated; final docs SHA push plus full CI/Publish site and phase35 review pending
+last_updated: 2026-11-22T05:14:16.000Z
+last_activity: 2026-11-21 -- 35-02 local pass: read-only remote re-collection (gate log 51), docs/state reconciled; no push/CI/tag
 progress:
-  total_phases: 10
-  completed_phases: 8
-  total_plans: 48
-  completed_plans: 45
-  percent: 94
+  total_phases: 11
+  completed_phases: 10
+  total_plans: 54
+  completed_plans: 53
+  percent: 98
 ---
 
 # Project State
@@ -21,13 +21,47 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-10)
 
 **Core value:** Noodara puede conocer, registrar y comunicarse con infraestructura real de forma segura y consistente — y ahora también desplegar sobre ella — sin fugas de credenciales, sin estados falsos, sin caídas por fallos del servidor remoto. Y debe enamorar al verla.
-**Current focus:** Phase34 en ejecución.34-01 completada tras diez gates autoritativos PASS: versiones base0.5.2, guard RED/GREEN25/25 y notas preparadas, sin cambio funcional nuevo. Evidencia: `docs/releases/v0.5.2-gate-logs/04-authoritative-prep-gates.txt`. Sigue34-02: publicación RC inmutable, CI/nightly exact-SHA, upgrade y smoke instalado Lima con hardening H1–H4; revisión independiente antes de fase35. Release continúa NOT READY; no RC/tag/push/upgrade/provider call realizado todavía. Phase33 cerrada localmente/ca9818ee; M2 sigue sin distribuirse. Plan: `.planning/34-35-v0.5.2-release.md`.
+**Current focus:** Phase35 activa.35-01 publicó stable `v0.5.2` sobre el RC aprobado exacto `3a34f0daa0a045c48039b2edc882d5ba3bf90fba`; objeto `b852e4a29a18ed837a1b11e06e7b904fed051ed4`. Release42740774327 completed/success10/10 attempt1, release estable no-draft/no-prerelease y Latest. Ambas imágenes públicas amd64/arm64 con provenance real checkout/build-output36; stable digests34/43 iguales antes/después UAT y coherentes con imágenes instaladas arm6439. Backup/restore32 PASS; instalador tag estable35, health0.5.2, admin auth41 e H2 simulado40 PASS; HTTP38 tail24/follow cancel23/end56,8 variantes en ambos streams y0plaintext. Datos/migraciones/cifrados/BYOK preservados; fixtures/contenedores/log-processes0, listeners/workspaces ajenos conservados. Resolución default instalador tag sin override37=0.5.2, sin instalación adicional. Publishers finales activos0/dispatch0 e históricos6 tags sin cambios42. Evidencia manual44 PASS; cinco gates autoritativos35-01 PASS y avance real antes de commit1baf2318.35-02 y revisión independiente final pendientes; overall phase35 NOT READY. Sin llamadas externas a provider; AI-live opcional histórico NOT EXECUTED.
+
+## Current 35-02 position — 2026-11-21
+
+Supersedes the 2026-11-10 replan/blocker checkpoints below; those are historical. 35-01, 35-04 and
+35-03 are done; phase36 is done. Selected phases 26–36: 10/11 phases and 53/54 tasks done (35-02 active).
+Public main `8f746de9` merges PR #2 (35-04 repair `ad14d854`, PR CI43674721094 success; 35-03
+sanitized record `9942ff40`, PR CI43683809372 success). Local `87b6f4db` (plan.json/events only) is
+not pushed yet. CI44245779779 on `8f746de9` failed: 11/12 success (e2e286, integration1315/10skipped,
+installer56) and only `security` failed at `pnpm audit` on GHSA-fc5q-39xc-vjpf (high, withdrawn
+2026-11-18T15:38:56Z after that run; local audit today shows 0 high). Publish site44245779789 success.
+Original docs CI42743060357 attempt1 finished failure (e2e/integration/installer); it is preserved.
+Nightly on `8f746de9` fails deploy-engine 22.04/24.04 (ADR 0010 A2 `contracts-v03`): unrelated open debt.
+Evidence: docs/releases/v0.5.2-gate-logs/51-final-source-remote-status.json. README/upgrade guard
+(RED46/GREEN47) and M2 distributed marking stay as published in `b8b1c042`. REL-05 open; phase35 NOT
+READY until the final 35-02 docs commit is pushed and full CI plus Publish site both succeed at that
+exact SHA, followed by root gates, fresh independent tier1 phase35 PASS and advance.
+
+## Historical authorized replan — 2026-11-10 America/Managua
+
+Order35-01(done) →35-04 cancellation repair(pending,wave2) →35-03 diagnostic evidence closeout(pending,wave3) →35-02 final distribution docs(pending,wave4). Cursor35-04. Historical cause remains INCONCLUSIVE; controlled late-container cancellation gap is DEMONSTRATED but NOT REPAIRED. Existing supervisor/instrumentation/lifecycle/evidence WIP and reviewed diagnostic dabdd438/run42884716047 success2jobs retained. No task advanced by planning; selected47/50 tasks and9/10 phases unchanged.
+
+User explicitly authorized separating unproven historical causality from repair.35-04 does not depend on35-03 or on retrospective proof; retains all nine gates and independent H1/H2 cleanup safeguards, plus caller-wired abort/deadline.35-03 closes the honest diagnostic record only after auditing35-04 proof; unknown stages/base identity never become verified claims.35-02 still requires actual FULL CI including installer/integration plus Publish site and phase review on exact final source. Original CI9success/3failure is retained, not waived. Independent hardening complete:0additions, no missing criteria. Next `/flow-orchestrate` from35-04. Detailedplan35-ssh-fixture-timeouts.md. This turn planning only; no source/test implementation, rerun, push, tag or VM/provider action. Earlier sequence/status passages below are historical checkpoints, superseded here.
+
+## Docs CI blocker checkpoint — 2026-11-10
+
+Docs source `b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266` is published; Publish site42743059908 attempt1 PASS, with deployed guidance verified. CI42743060357 attempt1 has an actual E2E129588583228 failure: 284 passed, 2 timeouts (critical-path180s; discovery60s). Latest observed snapshot: 9/12 jobs success, E2E failed, integration129588583307 and installer129588583325 still in progress with outcomes pending; the run itself remains in progress. Durable sanitized proof: `docs/releases/v0.5.2-gate-logs/50-docs-ci-attempt1-failure.json`.
+
+Both failures occur while awaiting the unchanged Ubuntu24.04 `startSshd` fixture before browser actions. Stable/docs source blobs match. Exact stalled Docker build/start operation and root cause remain unverified; no infrastructure cause is established. Scope conflict stops repair: helpers/specs/images/workflow are outside35-02. Recommend a `/flow-plan` prerequisite for redacted stage/timing diagnosis, evidence-based repair and unchanged full E2E acceptance; preserve attempt1 failure and immutable stable/RC artifacts. Task35-02 remains active, REL-05 open and phase35 NOT READY; final gates/review/advance are pending, with no final phase35 PASS. Stable35-01 publication and validation remain intact.
+
+## Plan amendment — 2026-11-09 America/Managua
+
+User requested planning only. Added pending deep35-03 (safe stage evidence and proven causal diagnosis, QA-23) then35-04 (RED/GREEN minimum fixture repair and exact-source full CI/site, QA-24).35-02 WIP and published docs remain preserved, requeued pending wave4 behind35-04;35-01 and prior completed phases unchanged. Selected26–35 now9/10 phases and47/50 tasks complete. Independent hardening applied (35-03 H1;35-04 H1/H2). Next `/flow-orchestrate`; next actionable35-03. Detailed scope/risks/verification: `.planning/35-ssh-fixture-timeouts.md`.
+
+Fresh planning query2026-11-10T03:22:25Z: docsCI9/12success, E2E failed and installer129588583325 also failed; integration still running. Installer cause unverified;35-03 triages it separately and any unrelated repair needs its own amendment. Earlier9/12/pending-installer observations below are historical checkpoints, not current verdicts. Phase35/REL-05 remain NOT READY; no rerun, source repair, publication, UAT or provider action during planning.
 
 ## Current Position
 
-Phase: 34 — v0.5.2 preparation complete; RC publication/validation next; phase35 depends on its independent PASS.
-Plan: 34-01 done (ten gates PASS) → 34-02 pending → phase34 review → 35-01 pending → 35-02 pending → phase35 review.
-Status:34-01 advanced complete; next34-02. Selected phases26–35:8/10 done,45/48 plans done. Fase33 complete locally/ca9818ee; M2 not yet distributed, published v0.5.1 unchanged. Preserve unrelated listeners via supported integration33992/E2E33993/33994 overrides after occupancy checks.
+Phase:35 active — stable distribution verified; 35-01 gates PASS and advanced complete.
+Plan:34-01 done →34-02 done →phase34 review PASS →35-01 done →35-04 done →35-03 done →35-02 active (final docs SHA CI/site pending) →phase35 review pending.
+Status:10/11 phases y53/54 plans avanzados completos (26–36; fase36 cerrada); no cambio inferido del plan. Stable v0.5.2 Latest y UAT PASS acreditados en docs/releases/v0.5.2-gate-logs/30–44; 35-01 cinco gates PASS y avance real antes de commit1baf2318. REL-04 completo; REL-05 pendiente35-02. Preservar los skips reales de evidencia candidata28; AI-live NO EJECUTADO, nunca live PASS. No tests/nightly duplicados ni provider calls nuevos.
 
 Last activity: 2026-11-08 — v0.5.1: CI 42443547066 attempt2 12/12 (E2E286/286), nightly 42443546664 16/16 (E2E20x286=5720, 15466s), Release 42460990499; Lima upgrade preserves data/BYOK, H2 canary GREEN and live Anthropic smoke PASS. First CI E2E transport failure retained in evidence; no assertions weakened. Gate docs/releases/v0.5.1-gate.md READY.
 
@@ -697,11 +731,39 @@ Items acknowledged and deferred at the v0.1 milestone close on 2026-09-22 (user 
 
 ## Session Continuity
 
-Last session: 2026-11-09T17:06:58.774535Z
-Stopped at:34-01 advanced complete with ten gates PASS;34-02 pending; release NOT READY.
-Resume file: .planning/34-35-v0.5.2-release.md (historical .planning/33-03-HANDOFF.md retained)
+Last session: 2026-11-10T02:59:08.419593+00:00
+Stopped at:35-02 local pass 2026-11-21: gate log51 recorded; final docs commit push and exact-SHA full CI/Publish site pending (publication step needs user confirmation).
+Resume file: docs/releases/v0.5.2-gate.md#final-repairdocs-source-status--2026-11-21 (durable); older .agent-flow/handoffs/35-02/CONTINUE.md is historical
 
 ## Operator Next Steps
 
-1. Continuar34-02: RC, CI/nightly exact-SHA y Lima; cerrar fase34 solo con revisión independiente PASS. Otra invocación de `/flow-orchestrate` continúa fase35.
-2. Preservar evidencia de fase33, tags históricos, datos/BYOK de Lima y procesos ajenos; no dar por publicada0.5.2 antes de35-01.
+1. Commit local de35-02, push a main (con confirmación del usuario) y registrar CI completo + Publish site exitosos en el SHA exacto; luego gates root, revisión tier1 independiente fase35 y advance. Si CI vuelve a fallar (audit u otro job), REL-05 sigue abierto y la reparación requiere plan propio. (Histórico:) Ejecutar `/flow-orchestrate` desde35-04. Hardening independiente del reordenamiento completo,0adiciones; criterios previos conservados. Detalle en35-ssh-fixture-timeouts.md. No finalizar35-02 ni reintentar CI sin diagnóstico/justificación; los criterios de causa, corrección y CI exitoso siguen pendientes. Revisión tier1 independiente final sigue pendiente.
+2. No mover tags ni reconstruir misma versión; mantener datos/BYOK/backups y procesos ajenos. Stable source es el RC aprobado exacto, nunca HEAD documental posterior. OPS-05/phase15 permanece fuera de alcance.
+
+## Current35-03 runner checkpoint — 2026-11-10T19:26Z
+
+This checkpoint supersedes the pending-runner/pending-job snapshots above without changing
+completed-task counts. Historical docsCI42743060357 attempt1 finished9success/3failure:
+E2E284passed/2timeouts; installer22.04 image-build300000ms and integration22.04
+beforeAll900000ms failed independently (ci-summary.json). No shared cause proven.
+
+Exact independently approved public-based diagnostic commitdabdd438463b876cce4702f524fbdac21aa90e30
+was published only to task/35-03-ssh-diagnostics after four root prepush gates PASS.
+Publicmain remainsb8b1c042. Run42884716047 attempt1 SUCCESS2jobs, no rerun/artifacts:
+https://github.com/Nooodara/noodara/actions/runs/42884716047 . Actual legacy fixture LinuxAMD64
+cold/warmbuild24.04=30.197s/0.159s,22.04=21.521s/0.094s; all4SSHready/ownedcleanupsuccess.
+Sanitized stages/source/limits: docs/testing/ssh-fixture-timeouts/runner-observations.json.
+Separate supervisor suites17passed/0skipped per job. Raw fixture numeric test/skip counts
+were deliberately suppressed and are not inferred. Exact resolved base platform identity
+was not recorded; manifest-only observation remains a statedA3limitation.
+
+35-03 remains incomplete: A4 historical stalled operation/cause UNPROVEN; current green
+execution cannot retrospectively supply missing historical build/start/readiness stages.
+Available retained failure proof has no discriminating stage records. Additional in-scope
+fault injection can prove a controlled mechanism but cannot attribute it to that original
+run without historical corroboration. A5 controlled actual held-build reproducer proves
+late-creation gap, not cancellation compliance; repair still required. No scope conflict
+newly discovered, no35-04repair/advance/commit or phase closure. Root final gates/review
+remain necessary after evidence edits; four prepush gates are not acceptance. Next decision
+requires preserving these evidence limits and reviewing the35-03→35-04 dependency against
+the demonstrated cancellation gap; do not waive or fabricate historical causal proof.

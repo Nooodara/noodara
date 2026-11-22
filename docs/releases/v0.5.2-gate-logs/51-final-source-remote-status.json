@@ -1,0 +1,659 @@
+{
+  "schema": "noodara.v0.5.2.gate-log.51",
+  "task": "35-02",
+  "collectedAt": "2026-11-21",
+  "method": "read-only gh/git queries; no push, rerun, dispatch, tag, publication or provider call",
+  "remoteMain": "8f746de9d044cafb1dc785a498036193bdb27e7c",
+  "localMain": "87b6f4db354991426cf94f2b732ba4c08ab4214d",
+  "outgoingLocalCommits": [
+    {
+      "sha": "87b6f4db354991426cf94f2b732ba4c08ab4214d",
+      "files": [
+        ".agent-flow/plan.json",
+        ".memory/events.jsonl"
+      ]
+    }
+  ],
+  "firstParentSinceStable": [
+    "87b6f4db354991426cf94f2b732ba4c08ab4214d chore(plan): close 35-03 SSH diagnostic evidence (delivered in 9942ff40)",
+    "8f746de9d044cafb1dc785a498036193bdb27e7c Merge pull request #2 from Nooodara/feat/v0.5-ssh-cancellation-repair",
+    "784ca1b69c1a7776a2f7eb96669794191189a3f2 Merge pull request #1 from Nooodara/feat/v0.5-contributor-test-tiers",
+    "19c4fd7023714c76ddf7ade28b76d558743b04df fix(test): preserve SSH fixtures across runner budget extensions",
+    "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266 docs(release): recommend v0.5.2 and publish stable redaction evidence"
+  ],
+  "stableTag": {
+    "v0.5.2": {
+      "object": "b852e4a29a18ed837a1b11e06e7b904fed051ed4",
+      "peeled": "3a34f0daa0a045c48039b2edc882d5ba3bf90fba"
+    },
+    "latestRelease": "v0.5.2",
+    "unchanged": true
+  },
+  "originalDocsSource": {
+    "sha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+    "ci": {
+      "run": 42743060357,
+      "workflow": "CI",
+      "headSha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1,
+      "createdAt": "2026-11-10T02:28:57Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42743060357",
+      "jobs": [
+        {
+          "id": 129588582798,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583057,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583101,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583107,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583206,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583220,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583228,
+          "name": "e2e",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test:e2e"
+          ]
+        },
+        {
+          "id": 129588583299,
+          "name": "unit",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588583307,
+          "name": "integration",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test:integration --exclude 'tests/integration/deploy-engine/**' --exclude 'tests/integration/proxy/**'"
+          ]
+        },
+        {
+          "id": 129588583325,
+          "name": "installer",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test:installer"
+          ]
+        },
+        {
+          "id": 129588583328,
+          "name": "security",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 129588585030,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    },
+    "publishSite": {
+      "run": 42743059908,
+      "workflow": "Publish site",
+      "headSha": "b8b1c0422cfce18ecabcc2f4f572a3dcc37c8266",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "createdAt": "2026-11-10T02:28:57Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/42743059908",
+      "jobs": [
+        {
+          "id": 129588577082,
+          "name": "deploy",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    }
+  },
+  "intermediateMainPushes": [
+    {
+      "run": 43043093057,
+      "workflow": "CI",
+      "headSha": "19c4fd7023714c76ddf7ade28b76d558743b04df",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1,
+      "createdAt": "2026-11-11T14:54:54Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/43043093057",
+      "jobs": [
+        {
+          "id": 130599798962,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799008,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799069,
+          "name": "installer",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test:installer"
+          ]
+        },
+        {
+          "id": 130599799143,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799154,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799155,
+          "name": "unit",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test --coverage"
+          ]
+        },
+        {
+          "id": 130599799207,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799332,
+          "name": "e2e",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm exec playwright install --with-deps chromium"
+          ]
+        },
+        {
+          "id": 130599799356,
+          "name": "security",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm exec playwright install --with-deps chromium"
+          ]
+        },
+        {
+          "id": 130599799364,
+          "name": "integration",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test:integration --exclude 'tests/integration/deploy-engine/**' --exclude 'tests/integration/proxy/**'"
+          ]
+        },
+        {
+          "id": 130599799374,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 130599799809,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "run": 43544989487,
+      "workflow": "CI",
+      "headSha": "784ca1b69c1a7776a2f7eb96669794191189a3f2",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1,
+      "createdAt": "2026-11-14T02:12:31Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/43544989487",
+      "jobs": [
+        {
+          "id": 132294103397,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103534,
+          "name": "e2e",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103560,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103566,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103575,
+          "name": "security",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103595,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103610,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103628,
+          "name": "integration",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103642,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103728,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132294103732,
+          "name": "unit",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm test --coverage"
+          ]
+        },
+        {
+          "id": 132294103751,
+          "name": "installer",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    }
+  ],
+  "repairPullRequestCI": [
+    {
+      "run": 43674721094,
+      "workflow": "CI",
+      "headSha": "ad14d854159b222dc5a4eb879bbb0c486e56b6c9",
+      "branch": "feat/v0.5-ssh-cancellation-repair",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "createdAt": "2026-11-15T03:58:57Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/43674721094",
+      "jobs": [
+        {
+          "id": 132692257075,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257195,
+          "name": "unit",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257227,
+          "name": "e2e",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257230,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257234,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257248,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257251,
+          "name": "integration",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257252,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257265,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257302,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692257611,
+          "name": "security",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132692258131,
+          "name": "installer",
+          "conclusion": "skipped",
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "run": 43683809372,
+      "workflow": "CI",
+      "headSha": "9942ff406e3abc520dcf495144d2fa5611bce212",
+      "branch": "feat/v0.5-ssh-cancellation-repair",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "createdAt": "2026-11-15T06:04:49Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/43683809372",
+      "jobs": [
+        {
+          "id": 132719918054,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918159,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918168,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918202,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918234,
+          "name": "security",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918274,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918304,
+          "name": "integration",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918322,
+          "name": "unit",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918370,
+          "name": "e2e",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918378,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719918382,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 132719919308,
+          "name": "installer",
+          "conclusion": "skipped",
+          "failedSteps": []
+        }
+      ]
+    }
+  ],
+  "currentRemoteMain": {
+    "sha": "8f746de9d044cafb1dc785a498036193bdb27e7c",
+    "ci": {
+      "run": 44245779779,
+      "workflow": "CI",
+      "headSha": "8f746de9d044cafb1dc785a498036193bdb27e7c",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1,
+      "createdAt": "2026-11-18T05:39:39Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/44245779779",
+      "jobs": [
+        {
+          "id": 134604265287,
+          "name": "site",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265345,
+          "name": "e2e",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265393,
+          "name": "lint",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265411,
+          "name": "integration",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265456,
+          "name": "state-machine",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265480,
+          "name": "ai-evals",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265495,
+          "name": "security",
+          "conclusion": "failure",
+          "failedSteps": [
+            "Run pnpm audit --audit-level=high"
+          ]
+        },
+        {
+          "id": 134604265504,
+          "name": "boundaries",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265518,
+          "name": "unit",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265536,
+          "name": "boot-smoke",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265659,
+          "name": "typecheck",
+          "conclusion": "success",
+          "failedSteps": []
+        },
+        {
+          "id": 134604265661,
+          "name": "installer",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    },
+    "publishSite": {
+      "run": 44245779789,
+      "workflow": "Publish site",
+      "headSha": "8f746de9d044cafb1dc785a498036193bdb27e7c",
+      "branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "createdAt": "2026-11-18T05:39:39Z",
+      "url": "https://github.com/Nooodara/noodara/actions/runs/44245779789",
+      "jobs": [
+        {
+          "id": 134604264994,
+          "name": "deploy",
+          "conclusion": "success",
+          "failedSteps": []
+        }
+      ]
+    },
+    "observedCounts": {
+      "unit": "473 files / 10977 passed, 1 skipped",
+      "integration": "109 passed / 3 skipped files; 1315 passed / 10 skipped tests",
+      "e2e": "286 passed",
+      "installer": "10 files / 56 passed"
+    },
+    "securityFailure": {
+      "step": "pnpm audit --audit-level=high",
+      "finding": "1 high: picomatch <=4.0.7 (GHSA-fc5q-39xc-vjpf) via typescript-eslint>@typescript-eslint/typescript-estree>tinyglobby; no patched version listed",
+      "ciRunAt": "2026-11-18T05:40:15Z",
+      "advisoryNow": {
+        "severity": "high",
+        "updated_at": "2026-11-19T16:07:41Z",
+        "withdrawn_at": "2026-11-18T15:38:56Z"
+      },
+      "localAuditToday": "pnpm audit --audit-level=high on unchanged lockfile: 26 vulnerabilities, 5 low / 21 moderate / 0 high",
+      "interpretation": "Advisory withdrawn after the CI run. This does NOT make CI 44245779779 successful; a fresh full CI on the exact final docs SHA must be observed."
+    },
+    "nightly": [
+      {
+        "run": 44290049107,
+        "conclusion": "failure"
+      },
+      {
+        "run": 44510560202,
+        "conclusion": "failure"
+      },
+      {
+        "run": 44722122139,
+        "conclusion": "failure"
+      },
+      {
+        "run": 44894622745,
+        "conclusion": "failure"
+      }
+    ],
+    "nightlyFailure": "deploy-engine (22.04)/(24.04): tests/integration/deploy-engine/contracts-v03.test.ts ADR 0010 A2 (-prev detach) 1 failed / 204 passed / 3 skipped on 24.04 in 44894622745; unrelated to docs, recorded as open debt; not in 35-02 scope"
+  },
+  "verdict": {
+    "A3": "UNMET: no successful full CI on the final exact repair/docs SHA yet. Final docs commit not yet created/pushed; its CI and Publish site must both succeed at that exact SHA.",
+    "gate": "NOT READY"
+  }
+}
