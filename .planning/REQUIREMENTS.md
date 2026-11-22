@@ -233,7 +233,7 @@ Planificados 2026-11-03 (fases 26–31). Fuente: `docs/roadmap-v0.1-v0.5.md` §1
 
 ## Post-v0.5.1 security hardening — legacy runtime logs (phase 33)
 
-Cierre local 2026-11-09: ocho gates originales de 33-03 y revisión tier-1 independiente PASS; avance completado. [Evidencia final](../docs/security/legacy-runtime-log-redaction/33-03-closure.md). M2 no se ha distribuido: v0.5.1 publicado conserva la exposición legacy; requiere release autorizado por separado.
+Cierre local 2026-11-09: ocho gates originales de 33-03 y revisión tier-1 independiente PASS; avance completado. [Evidencia final](../docs/security/legacy-runtime-log-redaction/33-03-closure.md). M2 distribuido corregido en v0.5.2 tras evidencia estable35-01; v0.5.1 conserva exposición legacy. [Distribución](../docs/releases/v0.5.2-gate.md#final-stable-distribution-evidence--2026-11-10), con límites de snapshot/longitud preservados.
 
 - [x] **SEC-01**: Tail y follow legacy usan redacción scoped de los secrets visibles del proyecto/environment/servicio, bajo la política existente de longitud mínima; no abren salida remota si no se puede cargar/descifrar el registro. Los contratos HTTP y JSON/NDJSON existentes se conservan.
 - [x] **SEC-02**: El lease de redacción vive hasta el último flush y teardown (incluida reconexión) y se libera exactamente una vez en todos los finales; se conservan límites, autorización, cancelación y limpieza de procesos/sesiones/slots.
@@ -241,15 +241,26 @@ Cierre local 2026-11-09: ocho gates originales de 33-03 y revisión tier-1 indep
 
 - [x] **QA-22**: Playwright permite puertos host web/API alternativos validados y coherentes con proxy, auth y Origin, con defaults3000/3100; preflight y teardown preservan listeners ajenos. El gate security:scan-leaks completo puede ejecutarse con puertos alternativos sin relajar sus pruebas.
 
+## Inicialización SSH de pruebas — prerrequisito de 35-02
+
+Reordenado por pedido explícito2026-11-10 (America/Managua): primero35-04 reparación reproducible, después35-03 registro diagnóstico y finalmente35-02 cierre. [Plan SSH](35-ssh-fixture-timeouts.md). 35-04 y35-03 completos y fusionados en `8f746de9` (PR #2); 35-02 pendiente.
+
+- [x] **QA-23**: Registro diagnóstico auditable con causa histórica explícitamente INCONCLUSA, evidencia original y runner22.04/24.04 preservados, limitaciones de etapas/base-image declaradas y separación del defecto reproducido de cancelación. Se cierra sólo tras auditar la reparación35-04 real; no afirma causa histórica ni CI global verde, y mantiene fallos ajenos abiertos.
+- [x] **QA-24**: Reparación mínima de la cancelación/creación tardía DEMOSTRADA con RED/GREEN, señal/deadline integrados a callers reales, cleanup e inventario verificables y aislamiento concurrente. Compatibilidad22.04/24.04, dos casos SSH/E2E completo y nueve gates verdes sin relajar presupuestos/assertions/retries; fuente pública revisada y artefactos estables inmutables. CI global/site verdes permanecen requisito final REL-05.
+- [ ] **QA-25**: Los timeouts de Vitest y Playwright escalan con un factor explícito `NOODARA_TEST_TIMEOUT_SCALE` (1 por defecto, validado, nunca en CI); con el factor sin definir los presupuestos son idénticos a los actuales.
+- [ ] **QA-26**: Un paso lento no produce fallos en cascada: el test unitario que importa la app completa tiene presupuesto propio y un timeout en los contratos SSH no deja recursos que hagan fallar a los tests siguientes; el leak guard no se debilita.
+- [ ] **QA-27**: Camino de contribución sin Docker (`pnpm verify`), preflight `pnpm test:doctor` con mensajes fijos y sin fuga de entorno, fallo temprano en los global setup y `CONTRIBUTING.md` con niveles de test y requisitos de máquina.
+- [ ] **QA-28**: Imágenes de fixture SSH direccionadas por contenido: reutilización local, pull opcional desde registry con verificación y fallback a build; workflow de publicación con acciones fijadas y permisos mínimos. La publicación requiere aprobación explícita.
+
 ## Publicación v0.5.2 — legacy log hardening (phases 34–35)
 
-Planificado y endurecido independientemente 2026-11-09; todos pendientes. Seis criterios nuevos en34-02/35-01 cubren concurrencia/artefactos, emisión/captura real, límites, restauración y resolución estable. La fase33 permanece cerrada localmente en `ca9818ee`.
+Planificado y endurecido independientemente 2026-11-09; fase34 completa tras ocho gates finales PASS, revisión tier1 independiente PASS y avance real. REL-01/02/03 completos con [evidencia RC](../docs/releases/v0.5.2-gate.md#final-candidate-evidence--2026-11-09); REL-04 completo con stable35-01 publicado/validado y cinco gates PASS/avance real; REL-05 pendiente: CI44245779779 en `8f746de9` falló sólo en audit (advisory luego retirado); faltan CI completo y Publish site exitosos en el SHA documental final, gates y revisión final independiente35-02 ([estado](../docs/releases/v0.5.2-gate-logs/51-final-source-remote-status.json)). Seis criterios nuevos en34-02/35-01 cubren concurrencia/artefactos, emisión/captura real, límites, restauración y resolución estable. La fase33 permanece cerrada localmente en `ca9818ee`.
 Plan detallado: [34–35 release](34-35-v0.5.2-release.md). La planificación no publica ni modifica versiones.
 
-- [ ] **REL-01**: Versiones base0.5.2 en todos los workspaces, notas y guard RC/final coherentes, sin cambios funcionales ajenos al hardening validado; preparación con gates y procedencia de fase33/H2.
-- [ ] **REL-02**: RC público inmutable/no Latest con fuente equivalente verificada, imágenes públicas amd64/arm64 y CI/nightly completos sobre su SHA exacto; evidencia de intentos/skips y revisión independiente antes de promoción.
-- [ ] **REL-03**: Upgrade Lima real conserva datos, cifrados/BYOK y configuración; smoke HTTP instalado demuestra redacción legacy tail/follow con secretos sintéticos, restauración/limpieza y H2 sin proveedor externo.
-- [ ] **REL-04**: v0.5.2 estable/Latest en el commit exacto del RC aprobado, Release e imágenes públicas multiarch verificadas, smoke de imagen estable verde y tags históricos intactos.
+- [x] **REL-01**: Versiones base0.5.2 en todos los workspaces, notas y guard RC/final coherentes, sin cambios funcionales ajenos al hardening validado; preparación con gates y procedencia de fase33/H2.
+- [x] **REL-02**: RC público inmutable/no Latest con fuente equivalente verificada, imágenes públicas amd64/arm64 y CI/nightly completos sobre su SHA exacto; evidencia de intentos/skips y revisión independiente antes de promoción.
+- [x] **REL-03**: Upgrade Lima real conserva datos, cifrados/BYOK y configuración; smoke HTTP instalado demuestra redacción legacy tail/follow con secretos sintéticos, restauración/limpieza y H2 sin proveedor externo.
+- [x] **REL-04**: v0.5.2 estable/Latest en el commit exacto del RC aprobado, Release e imágenes públicas multiarch verificadas, smoke de imagen estable verde y tags históricos intactos.
 - [ ] **REL-05**: README/upgrade recomiendan0.5.2 después de publicar; accuracy/site/CI documental verdes, gate final acreditado y M2 distribuido con límites documentados y revisión final independiente.
 
 ## v2 Requirements
@@ -428,16 +439,22 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-20 | Phase 30 | Complete |
 | QA-19 | Phase 31 | Complete |
 | QA-21 | Phases 31, 32 | Complete: v0.5.0 published; post-release H2 distributed as v0.5.1, CI/nightly/Lima green (docs/releases/v0.5.1-gate.md) |
-| SEC-01 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
-| SEC-02 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
-| SEC-03 | Phase 33 | Complete locally — eight 33-03 gates and independent tier-1 PASS; published v0.5.1 unchanged |
+| SEC-01 | Phase 33 | Complete locally (phase33); distributed in v0.5.2 with stable35-01 evidence; historical v0.5.1 unchanged |
+| SEC-02 | Phase 33 | Complete locally (phase33); distributed in v0.5.2 with stable35-01 evidence; historical v0.5.1 unchanged |
+| SEC-03 | Phase 33 | Complete locally (phase33); distributed in v0.5.2 with stable35-01 evidence; historical v0.5.1 unchanged |
 | QA-22 | Phase 33 | Complete locally — 33-04/609239a8 and full 33-03 leak gate PASS; independent phase PASS |
+| QA-23 | Phase 35 / 35-03 | Complete — sanitized record `9942ff40` (PR CI43683809372 success), merged in `8f746de9`; historical cause INCONCLUSIVE |
+| QA-24 | Phase 35 / 35-04 | Complete — repair `ad14d854` (PR CI43674721094 success), merged in `8f746de9`; global CI/site remain REL-05 |
+| QA-25 | Phase 36 / 36-01 | Pending |
+| QA-26 | Phase 36 / 36-02 | Pending |
+| QA-27 | Phase 36 / 36-03 | Pending |
+| QA-28 | Phase 36 / 36-04 | Pending |
 
-| REL-01 | Phase 34 | Pending |
-| REL-02 | Phase 34 | Pending |
-| REL-03 | Phase 34 | Pending |
-| REL-04 | Phase 35 | Pending |
-| REL-05 | Phase 35 | Pending |
+| REL-01 | Phase 34 | Complete |
+| REL-02 | Phase 34 | Complete |
+| REL-03 | Phase 34 | Complete |
+| REL-04 | Phase 35 | Complete — stable35-01 Release/Lima/artifacts and five authoritative gates PASS; actual advance |
+| REL-05 | Phase 35 | Pending — CI44245779779 on `8f746de9` failed (security audit only); final docs SHA CI/site and phase35 review pending |
 
 **Coverage:**
 - v1 requirements: 61 total

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-09T17:06:23.322Z",
+  "updatedAt": "2026-11-22T05:09:51.860Z",
   "cursor": {
-    "phase": "34",
-    "task": "34-02"
+    "phase": "35",
+    "task": "35-02"
   },
   "phases": [
     {
@@ -12280,7 +12280,7 @@
       "dependsOn": [
         "33"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "34-01",
@@ -12363,7 +12363,7 @@
           "dependsOn": [
             "34-01"
           ],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "release-v052",
             "test",
@@ -12442,12 +12442,14 @@
       "goal": "Publish v0.5.2 on the independently approved RC commit, verify stable artifacts and installed log redaction, then publish accurate upgrade guidance and final distribution evidence without moving validated tags.",
       "requirements": [
         "REL-04",
-        "REL-05"
+        "REL-05",
+        "QA-23",
+        "QA-24"
       ],
       "dependsOn": [
         "34"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "35-01",
@@ -12462,7 +12464,7 @@
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "release-v052",
             "test",
@@ -12510,6 +12512,178 @@
           "tier": "deep"
         },
         {
+          "id": "35-04",
+          "title": "Repair reproduced SSH cancellation and late-resource cleanup",
+          "scope": [
+            "tests/integration/helpers/ssh.ts",
+            "tests/integration/helpers/container-start.ts",
+            "tests/integration/helpers/port-binding-retry.ts",
+            "tests/integration/helpers/test-resources.ts",
+            "tests/unit/integration-helpers/",
+            "tests/integration/ssh/fixture-lifecycle.test.ts",
+            "tests/e2e/critical-path.spec.ts",
+            "tests/e2e/discovery.spec.ts",
+            "tests/e2e/fixtures/stack.ts",
+            ".github/workflows/ci.yml",
+            "docs/testing/ssh-fixture-timeouts/",
+            ".planning/",
+            ".memory/",
+            ".agent-flow/config.json",
+            "tests/integration/images/sshd-ubuntu-24.04/Dockerfile",
+            "tests/integration/images/sshd-ubuntu-22.04/Dockerfile",
+            "tests/integration/images/sshd-common/entrypoint.sh",
+            "tests/integration/images/sshd-common/setup-users.sh",
+            "tests/e2e/fixtures/ssh-fixture.ts"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "35-01"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-ssh-fixture",
+            "it-ssh-contracts",
+            "e2e-ssh-regression",
+            "e2e-full",
+            "security-leaks"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Use the existing controlled held-build/outer-deadline reproducer as evidence of the CURRENT cancellation gap, not the unknown historical CI cause. Preserve its diagnostic snapshot and capture a new behaviorally failing RED contract that asserts the required cancellation/cleanup outcome before changing implementation; the existing test which passes by observing a leak is not GREEN for the repair. Then implement the smallest test-fixture-only fix and record actual GREEN/source hashes. pnpm/dependency availability failures or retroactive baseline restores are not RED-first. Existing35-03 instrumentation/supervisor WIP is retained and reviewed, not assumed accepted.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Cancellation/deadline must reach the real fixture owner before build/start is awaited. Integrate the cancellation signal/deadline into the actual Playwright setup/lifecycle so outer test timeout cannot leave creation running without ownership; a helper option that callers never use is insufficient. Cancel before work, during held build, create/start, port/SSH readiness and before returning a handle. Preserve the primary abort/startup error and bounded completion/cleanup; late daemon completion is owned, settled and reaped. No Promise.race-only abandonment or ignored background rejection. Do not increase existing test/job budgets, weaken readiness/assertions, skip cases, change retries0, add arbitrary retries/sleeps or merely move setTimeout earlier. No unrelated prebuild/performance change without new causal evidence.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "RED/GREEN lifecycle regressions cover real cold/warm success, build/start rejection, readiness timeout, cancellation with no returned handle, delayed build/create/start success after cancellation, repeated stop and cleanup failures. Prove no owned surviving containers/processes while a foreign listener/container sentinel survives. Verify shared behavior on Ubuntu22.04/24.04, preserve narrow port-binding retry semantics and cryptographically random ownership/credentials. No secrets in logs or errors; allowlisted bounded diagnostics redact sensitive values before emission and tests reject raw env/keys/passwords/cookies/exception causes. Preserve node:crypto randomUUID/randomBytes CSPRNG, never Math.random, for ownership IDs and ephemeral credentials.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Both previously failed real-SSH Playwright cases and full unchanged E2E suite pass at retries0 with actual counts/skips; run SSH contracts and lifecycle regression on Ubuntu22.04/24.04 and existing leak gate. Keep all nine declared repair gates. Occupancy-check alternate integration33992/web33993/API33994; preserve defaults, unrelated resources, shared images/cache and no-prune rule. Current cold/warm timings and repaired cancellation proof never establish the historical CI42743060357 cause.",
+              "proof": "manual"
+            },
+            {
+              "id": "A5",
+              "text": "Independently review and publish only scoped fixture/test/workflow repair and sanitized evidence from an isolated public-baseline checkout with exact parent/tree/allowlisted-diff mapping and unchanged-config full-content gitleaks. Never publish local planning ancestry or diagnostic-only workflow over normal CI: preserve all normal CI jobs/triggers, permissions and existing secret scans. Record actual relevant E2E/security/SSH job results on the exact repair SHA and every other triggered job status/count/skip/attempt without extrapolation. Task repair acceptance requires its relevant tests/gates and caller-integrated cancellation proof, not an invented historical cause or unrelated installer fix. Unrelated installer/integration failures remain explicit blockers for35-02; never call the whole CI green or close REL05 if any required job fails.",
+              "proof": "manual"
+            },
+            {
+              "id": "A6",
+              "text": "Before/after any reviewed repair publication verify historical/stable/RC tags and stable image index/platform identities unchanged, no conflicting same-version Release publisher across refs/dispatch inputs, and Latest0.5.2 at approved3a34f0da. Keep diagnostic dabdd438/run42884716047 and original docs b8b1c042/failed CI attempts as distinct immutable evidence. No same-version rebuild, production/runtime/installer changes, UAT/provider calls or automatic reruns.35-03 is NOT a prerequisite: its later handoff will audit the repair and archive the historical inconclusive diagnosis.",
+              "proof": "manual"
+            },
+            {
+              "id": "A7",
+              "text": "Gate `test` must pass on a clean checkout with no workspace build outputs (no packages/*/dist, no apps/*/dist), exactly as the CI unit job runs it (pnpm install --frozen-lockfile then pnpm test, no build step). RED is the retained CI run 43043093057 unit job on 19c4fd70 (2 FAIL in tests/unit/integration-helpers/ssh-playwright-cancellation.test.ts: \"Cannot find module .../@noodara/domain/dist/server/index.js\", \"No tests found\") plus the local dist-free reproduction; an earlier GREEN obtained with dist present is not proof. Fix by making the real-Playwright subprocess load the SSH fixture without importing apps/control-plane or any workspace dist: one single `sshTest` definition in a dependency-light fixture module, re-exported by tests/e2e/fixtures/stack.ts so critical-path/discovery specs keep using the identical fixture. Do not add a build step to the unit job, pre-build in the test, add alias/loader shims to the subprocess, skip or relax either case, change retries 0, or raise budgets. A regression test fails if the fixture module graph reaches apps/control-plane or a workspace dist again.",
+              "proof": "test"
+            },
+            {
+              "id": "A8",
+              "text": "Record CI run 43043093057 attempt 1 on 19c4fd70 as immutable evidence with per-job status (8 success, 5 failure): unit = repair defect covered by A7; e2e and security = Playwright browser dependency install failed because the runner could not resolve security.ubuntu.com; installer = image build could not resolve archive/security.ubuntu.com; integration = 16 files \"Failed to build image\" in the same window with cause NOT established from logs. Never label the DNS failures as fixed by this task, never infer the integration cause, and do not rerun 43043093057 in place of a new exact-SHA run. A5 evidence must come from a CI run on the new repair SHA, with every triggered job status/count/skip/attempt recorded.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Exercise overlapping fixture lifecycles with distinct ownership IDs, including a foreign labelled resource created after the first lifecycle's baseline snapshot. Cancelling or cleaning one lifecycle preserves the other lifecycle and its resources; a shared noodara.test label or snapshot difference alone is insufficient authorization for removal. Verify both owned lifecycles eventually clean up independently.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Cleanup verification fails closed: inject Docker resource-enumeration and removal failures and prove they cannot produce a zero-survivor or successful-cleanup claim. Preserve the primary startup failure while reporting a sanitized cleanup-unverified outcome; successful zero-leak evidence requires a completed inventory after all owned in-flight creation has settled.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/input-validation",
+            "http-api/body-cap",
+            "auth-secrets/password-hashing"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "35-03",
+          "title": "Close SSH diagnostic evidence with historical cause inconclusive",
+          "scope": [
+            "tests/integration/helpers/ssh.ts",
+            "tests/integration/helpers/container-start.ts",
+            "tests/integration/helpers/port-binding-retry.ts",
+            "tests/integration/helpers/test-resources.ts",
+            "tests/unit/integration-helpers/",
+            "tests/integration/ssh/fixture-lifecycle.test.ts",
+            "tests/e2e/critical-path.spec.ts",
+            "tests/e2e/discovery.spec.ts",
+            "tests/e2e/fixtures/stack.ts",
+            ".github/workflows/ci.yml",
+            "docs/testing/ssh-fixture-timeouts/",
+            ".planning/",
+            ".memory/",
+            ".agent-flow/config.json"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "35-01",
+            "35-04"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Retain original docs b8b1c042/CI42743060357 attempt1 and proof50; record actual final9successful/3failed jobs, counts/skips and safe artifact identities. E2E284passed/2timeouts, installer22.04 build deadlines and integration22.04 beforeAll timeout remain separate failures, not a proven common cause. Current evidence lacks discriminating historical build/start/readiness records; classify historical cause explicitly INCONCLUSIVE and list evidence absent, hypotheses and limits. Do not claim all possible external records exhausted. Closing this diagnostic task is closure of the evidence record, not fixing or waiving the historical failures.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "Retain observed diagnostic code/test history honestly: distinguish strict RED-before-fix cases from initial pnpm availability failure and retroactive collector RED. Regression-test allowlisted bounded monotonic diagnostic metadata and cryptographically random ownership/credentials; never raw inspect/env/build logs/keys/passwords/cookies/token/exception causes. Describe overlapping Docker.start/port-inspection hooks explicitly rather than claiming independent attribution; validate only stage distinctions actually measured. H1 diagnostic-sink behavior remains mandatory after35-04 changes. Preserve node:crypto randomUUID/randomBytes CSPRNG, never Math.random, for ownership IDs and ephemeral credentials. No secrets in logs or errors: retain existing redaction tests. Preserve the supervisor output size cap and oversized-line rejection without buffering unbounded or exposing rejected bytes; no new HTTP endpoint or request handler is introduced.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Archive already collected local isolated BuildKit and real LinuxAMD64 legacy-fixture cold/warm22.04/24.04 observations, exact source/run/job identities, cleanup inventories and timing differences without another automatic run. Preserve diagnostic dabdd438/run42884716047 attempt1 success2jobs and all publication review/hash mapping. Separately observed mutable manifest digests are NOT the exact resolved historical platform/base-image ID; record that unavailable identity as a limitation, never reconstruct/fabricate it or assert cold/warm/ARM/X64/build-backend equivalence. A new diagnostic run is allowed only for a specified new question with fresh independent prepublication review.",
+              "proof": "manual"
+            },
+            {
+              "id": "A4",
+              "text": "Separate three claims in final evidence: historical CI timeout cause INCONCLUSIVE; current cancellation/late-resource gap DEMONSTRATED by controlled reproducer; repaired cancellation contract VERIFIED only by actual35-04 RED/GREEN, caller wiring and Docker lifecycle/gates. Cross-link exact before/after source hashes and actual results; a successful diagnostic or repair run does not explain the past timeout. No proven historical cause is required for completing this evidence record, per explicit user replan; unknowns remain open and never become PASS.",
+              "proof": "manual"
+            },
+            {
+              "id": "A5",
+              "text": "Audit35-04 actual proof of build/start failure, deadline/cancellation, late success ownership/reaping, primary plus cleanup failures, repeated stop and foreign-resource survival. Do not duplicate repair implementation or require it before35-04 can start. Missing repair proof keeps this diagnostic closeout pending; unrelated installer/integration failure does not falsify isolated cancellation proof but remains a distinct35-02 blocker.",
+              "proof": "manual"
+            },
+            {
+              "id": "A6",
+              "text": "Publish/reconcile sanitized diagnosis and source/result index under docs/testing/ssh-fixture-timeouts, truthfully update QA23/state and append-only memory, scan all outgoing contents with unchanged gitleaks config and no exempt/zero-byte coverage. Keep completed phases/35-01/WIP intact. No product/runtime/installer repair, tag moves, same-version rebuild, UAT/provider calls or blanket reruns. REL05, whole-CI/site acceptance and final independent phase35 verdict remain reserved for35-02.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Diagnostic emission is observational: a throwing, closed or backpressured diagnostic sink cannot replace the original startup outcome or prevent deadline/cancellation cleanup. Controlled tests exercise sink failure and excessive event production, proving bounded buffering and continued cleanup without emitting raw errors as a fallback.",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "auth-secrets/password-hashing"
+          ],
+          "tier": "deep"
+        },
+        {
           "id": "35-02",
           "title": "Publish upgrade guidance and close distributed M2 evidence",
           "scope": [
@@ -12525,11 +12699,13 @@
             ".planning/",
             ".memory/"
           ],
-          "wave": 2,
+          "wave": 4,
           "dependsOn": [
-            "35-01"
+            "35-01",
+            "35-04",
+            "35-03"
           ],
-          "status": "pending",
+          "status": "active",
           "gates": [
             "release-v052",
             "test",
@@ -12550,12 +12726,392 @@
             },
             {
               "id": "A3",
-              "text": "Publish documentation in a separate reviewed commit after the validated tag; no tag moves. Record its public source mapping and successful CI plus Publish site on that docs commit, with actual job results rather than extrapolating from RC. Keep candidate validation and docs-publication evidence separate; do not publish unrelated local untracked files.",
+              "text": "Publish documentation in a separate reviewed commit after the validated tag; no tag moves. Record its public source mapping and successful CI plus Publish site on that docs commit, with actual job results rather than extrapolating from RC. Keep candidate validation and docs-publication evidence separate; do not publish unrelated local untracked files. Preserve original docs source b8b1c042 and its failed CI42743060357 attempt1. After35-03/35-04, bind final documentation to the exact independently reviewed repair/docs source and require successful full CI and Publish site at that SHA; do not reuse successful site from one SHA as CI proof for another. If current remote main contains reviewed diagnostic commits, account for every outgoing file and preserve first-parent/source provenance. Any remaining unrelated installer failure keeps this criterion unmet. Full successful CI, including integration and installer, and Publish site on the final exact repair/docs SHA remain mandatory HERE, even if35-04 passed relevant repair checks and35-03 closed an inconclusive evidence record. Any separate22.04 repair needs an explicitly scoped plan and verified final source; never substitute the two-job diagnostic run or downgrade a failed historical attempt.",
               "proof": "manual"
             },
             {
               "id": "A4",
               "text": "All declared documentation gates pass; gitleaks scans outgoing changes/evidence clean with redaction. Obtain a fresh independent tier1 phase35 PASS, advance before closure commit, and leave reviewable final handoff showing published version/SHA/artifacts, preservation/cleanup and any remaining unrelated debt.",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "36",
+      "title": "Contributor test tiers and slow-machine resilience",
+      "goal": "A contributor with a modest machine (about 4 CPU / 6 GB for the VM that runs Docker) can verify a change locally and get truthful results: a Docker-free verify path, timeouts that scale by an explicit opt-in factor without changing CI budgets, no failure cascades from a single slow step, a preflight that names missing prerequisites, and fixture images that do not have to be rebuilt from apt on every machine.",
+      "requirements": [
+        "QA-25",
+        "QA-26",
+        "QA-27",
+        "QA-28"
+      ],
+      "dependsOn": [
+        "34"
+      ],
+      "status": "done",
+      "tasks": [
+        {
+          "id": "36-01",
+          "title": "Opt-in timeout scale for slow machines with CI budgets unchanged",
+          "scope": [
+            "tests/support/",
+            "tests/unit/support/",
+            "vitest.config.ts",
+            "vitest.integration.config.ts",
+            "vitest.installer.config.ts",
+            "vitest.state-machine.config.ts",
+            "vitest.ai-evals.config.ts",
+            "playwright.config.ts",
+            "tests/unit/scripts/",
+            "tests/e2e/tsconfig.json",
+            "tsconfig.json"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED first. One pure, dependency-free module parses NOODARA_TEST_TIMEOUT_SCALE and exposes the factor plus a `scaled(ms)` helper. Unset or empty means exactly 1. Accept only finite decimal numbers in [1, 10]; anything else (0, negative, <1, NaN, Infinity, non-numeric, >10, whitespace-padded garbage) throws an error naming the variable and the accepted range instead of silently falling back, so a typo can never shorten or unbound a timeout. `scaled` returns an integer number of milliseconds and never less than its input.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Every runner-level default is derived from that single module: unit testTimeout/hookTimeout (today the implicit Vitest defaults, made explicit at their current values), integration 120000/120000, installer 900000/900000, Playwright `timeout` 60000 and `expect.timeout` 15000. With the variable unset the resolved values are byte-for-byte the current ones; a test loads each config with scale unset and with scale 3 and asserts both sets of numbers. Do not change retries (0), workers, fileParallelism, pools or any assertion.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "CI budgets stay unscaled: a regression test parses every file in .github/workflows and fails if any of them sets NOODARA_TEST_TIMEOUT_SCALE. When the scale is not 1 each runner prints one line stating the active factor so local evidence can never be mistaken for unscaled evidence. No secrets or environment dumps in that output.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Record in docs/testing (owned by 36-03) is not required here; this task only reports, in its status block, the unscaled and scaled values it verified and confirms `pnpm test` passes on a checkout with no packages/*/dist or apps/*/dist.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Parser strictness is pinned by table-driven cases: only plain decimal notation matching ^\\d+(\\.\\d+)?$ is accepted; hex (0x2), exponent (1e1), signed (+2, -2), comma decimals (2,5), digit separators (1_0) and values with leading/trailing whitespace all throw. The error message names the variable and range, and echoes at most a truncated (<= 32 chars), control-character-stripped copy of the rejected value, never other environment content.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "`scaled(ms)` validates its own input and output: a non-finite, negative or non-numeric argument throws; the result is rounded up (Math.ceil) and a result above 2147483647 ms (the Node timer limit, beyond which setTimeout fires immediately) throws instead of being returned. A test proves the largest runner default (installer 900000) times the maximum factor 10 stays below that limit.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "An invalid NOODARA_TEST_TIMEOUT_SCALE fails at config-load time for every runner (each Vitest config and playwright.config.ts), before any test, global setup, container or port is touched, with a non-zero exit; a test loads each config with an invalid value and asserts the throw.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "The scale is test-only: a regression test fails if any non-test production source under apps/*/src or packages/*/src imports the scale module or reads NOODARA_TEST_TIMEOUT_SCALE, so product timeouts (SSH, Docker, Git, HTTP) can never be lengthened by it.",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "The factor is resolved from the environment once per process and is identical in runner main process and workers/forks (Vitest pool workers, Playwright workers); the 'active factor' line is printed once per runner invocation, not once per worker or per test file.",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "36-02",
+          "title": "Remove slow-machine fragility: cold app import test and SSH contracts failure cascade",
+          "scope": [
+            "apps/control-plane/src/services/legacy-log-redactor.test.ts",
+            "tests/integration/ssh/contracts.test.ts",
+            "tests/integration/ssh/fixture-lifecycle.test.ts",
+            "tests/integration/helpers/leak-guard-setup.ts",
+            "tests/integration/helpers/test-resources.ts",
+            "tests/integration/helpers/test-resources.test.ts",
+            "tests/integration/helpers/ssh.ts",
+            "tests/unit/integration-helpers/",
+            "docs/testing/slow-machines/",
+            "vitest.config.ts",
+            "tests/support/",
+            "tests/unit/support/",
+            "tests/unit/scripts/"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "36-01"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-ssh-contracts",
+            "it-ssh-fixture"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "Diagnose before changing anything, from the retained logs of the 2026-11-12 run on a 4 CPU / 6 GB WSL VM (.agent-flow/logs/2026-11-12T01-59-11-730Z-gate-test.log, ...T02-09-26-641Z-gate-it-ssh-fixture.log, ...T02-23-18-858Z-gate-it-ssh-contracts.log): for each failing test record whether it is a primary failure (its own deadline) or a secondary one (caused by resources or state left by an earlier failure), with the log lines that prove it. Write the table to docs/testing/slow-machines/2026-11-12-wsl-run.md without hostnames, usernames, tokens or raw environment. State plainly what the logs do not establish.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "apps/control-plane/src/services/legacy-log-redactor.test.ts \"production default wiring\" no longer depends on the 5 s default to cold-import the whole app: give the import its own explicit budget through `scaled()` (or move the import to a hook with such a budget). The assertions, the lazy build/close behaviour under test and the fail-closed expectation stay exactly as they are; do not mock the app, skip, retry or mark the test slow-only.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "A single primary timeout in tests/integration/ssh/contracts.test.ts must not make later tests in the file fail for a different reason. Prove the mechanism with a RED unit or integration regression that reproduces the cascade deterministically (injected slow or failing step, no real sleep-until-timeout), then fix ownership/cleanup so resources of a timed-out test are reaped before the next test asserts an empty inventory. The leak guard keeps failing the file that really leaks and keeps naming the resources: do not widen its allowlist, lengthen settle times to hide leaks, or turn its failure into a warning.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "Explicit per-test and per-hook budgets in the two SSH suites and in tests/integration/helpers/ssh.ts that bound real image build/start/readiness go through `scaled()`; with the scale unset every budget is numerically identical to today (assert it). Cancellation, ownership and late-resource semantics delivered by 35-04 are untouched: its existing unit regressions under tests/unit/integration-helpers/ pass unmodified.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "On this machine run `it-ssh-fixture` (NOODARA_TEST_UBUNTU=all) and `it-ssh-contracts` one at a time. Report real counts, duration, the scale used and the leftover noodara.test inventory after each. A green result obtained with scale > 1 is recorded as scaled local evidence, never as proof of the unscaled budgets.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Reaping the resources of a timed-out test is itself bounded by an explicit `scaled()` deadline and is scoped strictly to the ownership id of that test/run: a regression proves it never removes a container, network, volume or image owned by another ownership id or lacking the noodara.test label.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "When the reap of a timed-out test's resources fails or exceeds its deadline, the failure is reported (not swallowed) and names the originating test and the surviving resources, so a later leak-guard failure is attributable to the primary failure instead of appearing as an unrelated one.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Any ownership or run identifier introduced or changed by this task is generated with crypto.randomUUID/randomBytes (never Math.random, timestamps or counters alone), so concurrent or back-to-back runs on the same Docker daemon cannot collide and reap each other's resources.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "No budget becomes unbounded: a static regression over the files in this task's scope fails on a test/hook timeout of 0, Infinity or a literal not routed through `scaled()` where A4 requires it, and the new explicit cold-import budget in legacy-log-redactor.test.ts is a named constant whose unscaled value is asserted.",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "docs/testing/slow-machines/ is covered by an automated check (unit test or the existing gitleaks/leak scan) that fails on absolute home paths (/home/<user>, /Users/<user>, C:\\Users\\), IP addresses, hostnames of the run machine and token-shaped strings, so the 'no hostnames, usernames, tokens' rule of A1 is enforced, not only reviewed.",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "36-03",
+          "title": "Contributor path: pnpm verify, test preflight and CONTRIBUTING guide",
+          "scope": [
+            "package.json",
+            "scripts/test-preflight.mjs",
+            "scripts/test-preflight-lib.mjs",
+            "tests/unit/scripts/",
+            "tests/integration/global-setup.ts",
+            "tests/e2e/global-setup.ts",
+            "CONTRIBUTING.md",
+            "README.md",
+            "CLAUDE.md",
+            "docs/testing/"
+          ],
+          "wave": 3,
+          "dependsOn": [
+            "36-01"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "`pnpm verify` runs lint, typecheck, unit tests and boundaries in sequence, stops at the first failure with that step's exit code, and needs no Docker daemon, no free port and no pre-existing build output. A unit test asserts the script composition so a later edit cannot drop a step or add a Docker-backed one.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "RED first. `pnpm test:doctor` reports, with injected probes so every branch is unit-tested without touching the host: Node version against package.json engines, pnpm version against packageManager, Docker daemon reachability, the `unzip` binary (identify and name in the message the component that spawns it; `spawn unzip ENOENT` failed one E2E test on 2026-11-12), Playwright Chromium presence, availability of port 3000 and the E2E ports honouring NOODARA_TEST_PORT_OVERRIDE / NOODARA_E2E_WEB_PORT / NOODARA_E2E_API_PORT, leftover noodara.test resources, and CPU count / total memory of the machine that runs Docker with a suggested NOODARA_TEST_TIMEOUT_SCALE. Hard prerequisites for the requested tier exit non-zero; advisories do not. `--tier unit|integration|e2e` selects what is required.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Preflight output is safe: it never prints environment variable values, home paths beyond the repo, Docker contexts with credentials or command stderr verbatim; probe failures are mapped to fixed messages. Every external command has an explicit timeout and a probe that hangs or throws yields a bounded \"could not determine\" result, never a crash or a hang. No shell interpolation of user-controlled strings: use execFile with argument arrays.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "tests/integration/global-setup.ts and tests/e2e/global-setup.ts fail fast, before any container, build or port is touched, with the same fixed messages when a hard prerequisite of their tier is missing. Existing prechecks (port 3000, leaked resources) keep their behaviour and wording.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "CONTRIBUTING.md (English) documents the tiers: what to run locally (`pnpm verify`), what CI runs on every pull request, how to run one integration or E2E file, minimum and recommended machine, the timeout scale and that CI never uses it, port overrides, and Windows/WSL notes (run inside the Linux filesystem, Docker Engine in the distro, .wslconfig memory). README links to it; the commands table in CLAUDE.md lists `pnpm verify` and `pnpm test:doctor`. Every command in the guide was executed on this machine and its real outcome noted in the status block.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "`pnpm test:doctor` is strictly read-only: it never removes or stops leftover noodara.test resources, never pulls or builds images, never installs browsers and never writes files; a unit test asserts the set of commands the injected probes may execute is a fixed read-only allowlist (e.g. docker version/ps/network ls/volume ls, never rm/prune/pull/build).",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "CLI contract is explicit and tested: an unknown or missing `--tier` value or any unknown flag exits with a distinct usage exit code and a fixed usage message (no silent default to a weaker tier); exit codes for 'ok', 'hard prerequisite missing' and 'usage error' are distinct and documented in CONTRIBUTING.md.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Port override values (NOODARA_TEST_PORT_OVERRIDE, NOODARA_E2E_WEB_PORT, NOODARA_E2E_API_PORT) are validated as integers in 1..65535; an invalid value yields a fixed message naming the variable (not its value) and is a hard failure for the tier that uses it. The availability probe binds on loopback only and closes its listener on every path (success, EADDRINUSE, timeout), proven by a test that the port is bindable again after the probe.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "The suggested NOODARA_TEST_TIMEOUT_SCALE is a pure deterministic function of CPU count and memory, always within [1, 10], and every value it can emit round-trips through the 36-01 parser without throwing (property/table test); when CPU or memory cannot be determined it suggests nothing rather than guessing.",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "The leftover-resource listing is bounded and sanitised: at most a fixed number of resource names are printed followed by a count of the rest, names are stripped of control/ANSI characters, and output contains no ANSI colour codes when stdout is not a TTY.",
+              "proof": "test"
+            },
+            {
+              "id": "H6",
+              "text": "Version probes fail closed to 'could not determine': a missing or malformed package.json `engines.node` / `packageManager` field, or unparseable `node`/`pnpm`/`docker` version output, produces the bounded fixed message and never a thrown exception or a false 'ok'.",
+              "proof": "test"
+            },
+            {
+              "id": "H7",
+              "text": "A docs-accuracy unit test asserts that every `pnpm <script>` named in CONTRIBUTING.md and in the CLAUDE.md commands table exists in package.json scripts, and that every NOODARA_TEST_* / NOODARA_E2E_* variable named in CONTRIBUTING.md is one the code actually reads, so the guide cannot drift.",
+              "proof": "test"
+            }
+          ],
+          "waives": [],
+          "tier": "deep"
+        },
+        {
+          "id": "36-04",
+          "title": "Content-addressed SSH fixture images with optional registry pull and build fallback",
+          "scope": [
+            "tests/integration/helpers/ssh.ts",
+            "tests/integration/helpers/fixture-image.ts",
+            "tests/integration/helpers/fixture-image.test.ts",
+            "tests/integration/images/",
+            "tests/unit/integration-helpers/",
+            "tests/integration/ssh/fixture-lifecycle.test.ts",
+            ".github/workflows/fixture-images.yml",
+            "tests/unit/scripts/",
+            "scripts/fixture-images.mjs",
+            "docs/testing/",
+            "package.json",
+            "CONTRIBUTING.md",
+            ".nvmrc"
+          ],
+          "wave": 4,
+          "dependsOn": [
+            "36-02"
+          ],
+          "status": "done",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-ssh-fixture",
+            "it-ssh-contracts"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED first. A fixture image identity is the SHA-256 of its build context (every file, path-sorted, with normalised line endings declared in the test) plus build arguments; the image is tagged and labelled with that hash. Changing any byte of the context or an argument changes the identity; an image whose label does not match the locally computed hash is never used.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "Resolution order is: local image with the matching hash, then (only when NOODARA_TEST_FIXTURE_REGISTRY is set) pull `<registry>/<name>:<hash>` with a bounded, scaled deadline and label verification, then local build. Pull not configured, unreachable, unauthorised, timed out, or label mismatch all fall back to the build path and are reported once with a fixed message; they never fail the test by themselves and never leave a partially pulled image tagged as valid. The registry value is validated as a registry reference and passed as an argument, never interpolated into a shell.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Cancellation, ownership ids, deadlines and late-resource reaping from 35-04 cover the new pull step as they cover build: aborting during a pull leaves no owned container or dangling tagged image and returns no handle. Existing unit regressions in tests/unit/integration-helpers/ pass unmodified, and the lifecycle \"cold\" cases still perform a real uncached build so the build path stays exercised on Ubuntu 22.04 and 24.04.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": ".github/workflows/fixture-images.yml builds and pushes the fixture images under their content hash, only on workflow_dispatch and on pushes to main that change tests/integration/images/**, with every action pinned to a full commit SHA (existing check-workflow-pins test covers it), `permissions` limited to contents: read and packages: write on the publishing job only, no pull_request_target, and no secret beyond GITHUB_TOKEN. A unit test asserts those properties. The existing CI workflows are not changed by this task.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "Nothing is published by this task: no image push, no workflow run, no change to the public repository. The status block states that registry publication and enabling NOODARA_TEST_FIXTURE_REGISTRY in CI wait for explicit user approval. Report measured cold-build versus warm-reuse durations for both Ubuntu versions on this machine, with the scale used.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The hash framing is unambiguous and portable: each entry contributes its POSIX-normalised relative path, its executable bit and its content with explicit length prefixes or delimiters (moving bytes between a path and a content, or between two files, changes the hash); build arguments are hashed as sorted key/value pairs; the same checkout produces the same identity on Linux, macOS and a CRLF Windows checkout. Line-ending normalisation applies only to the declared text files, never to binary files.",
+              "proof": "test"
+            },
+            {
+              "id": "H2",
+              "text": "Context enumeration is safe: symlinks are rejected (or hashed as links and never followed outside the context directory), entries excluded by .dockerignore are excluded from the hash exactly as from the build, and a path that escapes the context root throws.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "Registry reference validation is pinned by table-driven cases: values with a URL scheme, embedded credentials (user:pass@), whitespace, shell metacharacters, uppercase repository components, a leading '-' (argument injection into `docker pull`), or exceeding a length cap are rejected with a fixed message that names the variable and does not echo the value; a rejected value falls back to the build path.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "No credential handling or leakage: the helper never runs `docker login`, never reads or prints Docker config/credential files, and never surfaces `docker pull`/`docker build` stderr verbatim in the fallback report; a canary test with a credential-shaped string in the registry value and in simulated pull stderr proves neither appears in test output or thrown errors.",
+              "proof": "test"
+            },
+            {
+              "id": "H5",
+              "text": "A pulled image is accepted only if, in addition to the label match, its OS/architecture equals the local Docker daemon's; a mismatch falls back to build and the pulled reference is removed. The hash tag is applied locally only after verification succeeds, and a failed or aborted build never leaves an image tagged with the content hash.",
+              "proof": "test"
+            },
+            {
+              "id": "H6",
+              "text": "Concurrent resolution of the same fixture identity (two tests or workers at once) performs at most one pull/build in-process and is idempotent across processes: the loser of a race reuses the verified image, and neither side removes an image the other is using.",
+              "proof": "test"
+            },
+            {
+              "id": "H7",
+              "text": "Cached content-addressed fixture images are distinguished from per-test resources: the leak guard and the 35-04 reaper neither report them as leaks nor delete them, while still failing on leaked containers/networks/volumes; any temporary tag or name used during pull/build is derived from a crypto.randomUUID ownership id.",
+              "proof": "test"
+            },
+            {
+              "id": "H8",
+              "text": "scripts/fixture-images.mjs and the test helper compute the identity through one shared implementation (or a parity test asserts both produce the same hash for the committed contexts), so the tag the workflow would publish is exactly the tag the tests would pull.",
+              "proof": "test"
+            },
+            {
+              "id": "H9",
+              "text": "The unit test for .github/workflows/fixture-images.yml additionally asserts: a `concurrency` group, an explicit `timeout-minutes` on every job, `persist-credentials: false` on checkout, no `${{ github.event.* }}` / `github.head_ref` expression interpolated into a `run:` script, and that an already existing `<name>:<hash>` tag is not overwritten (publish is skipped when the tag exists).",
+              "proof": "test"
+            },
+            {
+              "id": "H10",
+              "text": "Pull stays opt-in everywhere: a regression test fails if any file under .github/workflows sets NOODARA_TEST_FIXTURE_REGISTRY, and docs/testing states the trust model in plain words (a pulled fixture image is third-party code executed by the tests; the label proves identity claimed by the publisher, not integrity) together with how to disable it.",
               "proof": "test"
             }
           ],
