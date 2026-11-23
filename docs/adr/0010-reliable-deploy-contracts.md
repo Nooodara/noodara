@@ -107,7 +107,8 @@ healthcheck. Rules:
   after HEALTHCHECK passes.
 
 Enforced by: `PREV / ADR 0010 / A2: a stopped container renamed to -prev frees the name and its published port; ...`
-and `PREV / ADR 0010 / A2: starting -prev while the new container holds the port fails AND detaches -prev from its network; ...`.
+and `PREV / ADR 0010 / A2: starting -prev while the new container holds the port fails and leaves -prev detached or attached (engine-dependent); the restore order (connect only when detached) brings version A back in both`
+(renamed 2026-11-23, see the amendment below).
 
 ### Measured (ms, both versions)
 
@@ -125,6 +126,36 @@ brings the port back.
 **Surprise:** `docker start <-prev>` while the new container holds the port fails **and detaches
 `-prev` from its network**. A later start runs with no network, IP or port, and stop + start does
 not repair it. Only `docker network connect` while stopped does. Hence the restore order above.
+
+### Amendment 2026-11-23 (phase 37, Docker Engine 29.10.0)
+
+The measurements above are kept as taken (Docker 29.8.1, 2026-10-14). The detach-on-failed-start
+surprise was observed up to Engine **29.9.3** (nightly `43581697263`, green) and is **not**
+observed on Engine **29.10.0**: the failed `docker start <-prev>` still exits non-zero with the
+port conflict, but `-prev` keeps its endpoint on `noodara-net-<serviceId>` (empty `IPAddress`,
+since it is stopped). The unchanged test failed at its `networkNames(prev)` assertion on 29.10.0
+(nightlies `44073612196` and `45013137566`, and locally on a fixture rebuilt without cache).
+Evidence: `docs/testing/docker-engine-drift/`.
+
+The decision stands, because it is correct under both behaviours: never start `-prev` while the
+new container exists, and connect only if detached. `restorePrevious` reads
+`{{json .NetworkSettings.Networks}}` keyed by `noodara-net-<serviceId>` and issues
+`docker network connect` only when that key is absent; a present key with an empty address is
+attached. The contract test now observes the state after the blocked start and classifies it as
+exactly `detached` (no endpoint) or `attached` (exactly that network), any other shape fails:
+
+| Engine | Branch after blocked start | Plain restore (no connect) | Redundant connect on stopped attached `-prev` | Restore order result |
+|---|---|---|---|---|
+| ≤ 29.9.3 | `detached` | runs with no network, port refused | not reached | connect, start: 201, `[net]` |
+| 29.10.0 | `attached` (`IPAddress` empty) | answers 201 | exits 0, networks unchanged | start: 201, `[net]` |
+
+On 29.10.0 a redundant `docker network connect` is accepted, so skipping it is not required for
+correctness there; the condition is kept because 29.9.x needs the connect and the skip avoids
+depending on how an engine treats a connect to an endpoint that already exists.
+
+The fixture Dockerfiles do not pin `docker-ce`: `install.sh` installs the current `docker-ce`, so
+the deploy-host fixture keeps matching what users get, and drift like this one shows up in the
+nightly instead of being hidden by a pin.
 
 ## A3: worker-retry rule
 

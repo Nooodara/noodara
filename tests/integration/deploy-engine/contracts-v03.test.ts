@@ -3,7 +3,8 @@
 // Docker, bash or Ubuntu changes it. Raw ssh2 as deployer, never the adapter and never a mock.
 //   - HC (A1, H1, H2): healthcheck probes from the host to the container IP on
 //     noodara-net-<serviceId>, through bash /dev/tcp under `env -i` + `timeout`; no curl, no image.
-//   - PREV (A2): a stopped container renamed to noodara-<serviceId>-prev frees its name and port.
+//   - PREV (A2): a stopped container renamed to noodara-<serviceId>-prev frees its name and port;
+//     the -prev network state after a failed start is observed (Engine-dependent), not presumed.
 //   - RETRY (A3 evidence): which steps collide when re-run after a crash mid-step.
 // Remote commands are constant strings; the variable parts (fresh UUIDs, container IPs) travel as
 // single-quoted arguments.
@@ -931,51 +932,135 @@ describe.each(DEPLOY_ENGINE_UBUNTU_VERSIONS)('ADR 0010 contracts on Ubuntu %s', 
     }
   });
 
-  it('PREV / ADR 0010 / A2: starting -prev while the new container holds the port fails AND detaches -prev from its network; it comes back only after `docker network connect`', async () => {
+  /**
+   * The -prev network state after a failed `docker start`, read from the same source as
+   * restorePrevious (`docker inspect --format '{{json .NetworkSettings.Networks}}'`, keyed by the
+   * exact name noodara-net-<serviceId>): `detached` is no endpoint at all, `attached` is exactly
+   * that one network. An attached endpoint with an empty IPAddress (a stopped container) is still
+   * `attached`, as it is for the product (networkAddress 'none'). Any other shape fails the test.
+   */
+  const prevNetworkState = async (
+    name: string,
+    net: string,
+  ): Promise<{ readonly branch: 'detached' | 'attached'; readonly ipAddress: string }> => {
+    const inspected = await run(
+      c(),
+      argv(
+        'docker',
+        'inspect',
+        '--type',
+        'container',
+        '--format',
+        '{{json .NetworkSettings.Networks}}',
+        '--',
+        name,
+      ),
+    );
+    if (inspected.exitCode !== 0) {
+      throw new Error(`network inspect of ${name} failed: ${inspected.stderr.trim()}`);
+    }
+    const parsed = JSON.parse(inspected.stdout.trim()) as unknown;
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error(`unexpected network shape for ${name}: ${inspected.stdout.trim()}`);
+    }
+    const keys = Object.keys(parsed);
+    if (keys.length === 0) return { branch: 'detached', ipAddress: '' };
+    const entry = (parsed as Record<string, unknown>)[net];
+    if (keys.length !== 1 || keys[0] !== net || typeof entry !== 'object' || entry === null) {
+      throw new Error(`unexpected networks for ${name}: ${JSON.stringify(keys)}`);
+    }
+    const ipAddress = (entry as Record<string, unknown>).IPAddress;
+    if (typeof ipAddress !== 'string') {
+      throw new Error(`unexpected IPAddress on ${net} for ${name}`);
+    }
+    return { branch: 'attached', ipAddress };
+  };
+
+  /** The product restore tail (restorePrevious): connect only when detached, then start. */
+  const restoreTail = async (name: string, net: string): Promise<'detached' | 'attached'> => {
+    const { branch } = await prevNetworkState(name, net);
+    if (branch === 'detached') await must(argv('docker', 'network', 'connect', '--', net, name));
+    await must(argv('docker', 'start', '--', name));
+    await waitFor(async () => (await healthOnPort()).kind === 'http', 'version A restored');
+    expect(await healthOnPort()).toEqual({ kind: 'http', status: 201 });
+    expect(await networkNames(name)).toEqual([net]);
+    return branch;
+  };
+
+  it('PREV / ADR 0010 / A2: starting -prev while the new container holds the port fails and leaves -prev detached or attached (engine-dependent); the restore order (connect only when detached) brings version A back in both', async () => {
     const svc = randomUUID();
     try {
       const scenario = await swapToB(svc);
       const { name, prev, net } = scenario;
+      const engine = (
+        await must(argv('docker', 'version', '--format', '{{.Server.Version}}'))
+      ).stdout.trim();
       const blocked = await run(c(), argv('docker', 'start', '--', prev));
       expect(blocked.exitCode).not.toBe(0);
       expect(blocked.stderr).toMatch(/port is already allocated|address already in use/);
       expect(await healthOnPort()).toEqual({ kind: 'http', status: 202 });
-      // The failed start leaves -prev with no network endpoint at all.
-      expect(await networkNames(prev)).toEqual([]);
 
-      // A plain restore now "succeeds" but runs the container with no network and no port.
-      await must(argv('docker', 'rm', '--force', '--', name));
-      await must(argv('docker', 'rename', '--', prev, name));
-      await must(argv('docker', 'start', '--', name));
-      const state = await must(
-        argv(
-          'docker',
-          'inspect',
-          '--type',
-          'container',
-          '--format',
-          '{{.State.Status}}',
-          '--',
-          name,
-        ),
-      );
-      expect(state.stdout.trim()).toBe('running');
-      expect(await networkNames(name)).toEqual([]);
-      expect((await must(argv('docker', 'port', '--', name))).stdout.trim()).toBe('');
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-      expect(await healthOnPort()).toEqual({ kind: 'refused' });
+      // Observed, not presumed: up to Engine 29.9.3 the failed start removed the endpoint
+      // (detached); on 29.10.0 the endpoint stays (attached). Anything else fails above.
+      const observed = await prevNetworkState(prev, net);
+      let redundantConnect: string | undefined;
 
-      // Repair: stop, reconnect to noodara-net-<serviceId>, start: version A on the port again.
-      await must(argv('docker', 'stop', '--timeout', '10', '--', name));
-      await must(argv('docker', 'network', 'connect', '--', net, name));
-      await must(argv('docker', 'start', '--', name));
-      await waitFor(async () => (await healthOnPort()).kind === 'http', 'version A repaired');
-      expect(await healthOnPort()).toEqual({ kind: 'http', status: 201 });
-      expect(await networkNames(name)).toEqual([net]);
+      if (observed.branch === 'detached') {
+        // A plain restore "succeeds" but runs the container with no network and no port.
+        await must(argv('docker', 'rm', '--force', '--', name));
+        await must(argv('docker', 'rename', '--', prev, name));
+        await must(argv('docker', 'start', '--', name));
+        const state = await must(
+          argv(
+            'docker',
+            'inspect',
+            '--type',
+            'container',
+            '--format',
+            '{{.State.Status}}',
+            '--',
+            name,
+          ),
+        );
+        expect(state.stdout.trim()).toBe('running');
+        expect(await networkNames(name)).toEqual([]);
+        expect((await must(argv('docker', 'port', '--', name))).stdout.trim()).toBe('');
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        expect(await healthOnPort()).toEqual({ kind: 'refused' });
+
+        // Stopped again, the restore tail sees it detached and connects before start.
+        await must(argv('docker', 'stop', '--timeout', '10', '--', name));
+        expect(await restoreTail(name, net)).toBe('detached');
+      } else {
+        // H2: the stopped -prev keeps its endpoint with an empty IPAddress; the product reads that
+        // as networkAddress 'none', i.e. attached, and skips the connect.
+        expect(observed.ipAddress).toBe('');
+        // H3: a redundant connect on the stopped, still-attached -prev. Measured on 29.10.0: it
+        // exits 0 and changes nothing. An engine that rejects it must say the endpoint exists.
+        // Either way the networks stay exactly [net] and the restore below still answers 201.
+        const again = await run(c(), argv('docker', 'network', 'connect', '--', net, prev));
+        if (again.exitCode === 0) {
+          redundantConnect = 'accepted';
+        } else {
+          expect(again.stderr).toMatch(/already exists/);
+          redundantConnect = `rejected: ${again.stderr.trim().split('\n')[0] ?? ''}`;
+        }
+        expect(await networkNames(prev)).toEqual([net]);
+        expect((await prevNetworkState(prev, net)).branch).toBe('attached');
+
+        // The plain restore (no connect) answers: rm new, rename -prev back, start.
+        await must(argv('docker', 'rm', '--force', '--', name));
+        await must(argv('docker', 'rename', '--', prev, name));
+        expect(await restoreTail(name, net)).toBe('attached');
+      }
 
       measure('PREV', ubuntu, {
-        case: 'failed start detaches network',
+        case: 'failed start of -prev',
+        engine,
+        branch: observed.branch,
+        attachedIpEmpty: observed.branch === 'attached' ? observed.ipAddress === '' : undefined,
         blockedStart: blocked.stderr.trim().split('\n')[0],
+        redundantConnect,
         swapToFirstAnswerMs: scenario.swapToFirstAnswerMs,
       });
     } finally {

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-23T04:46:57.398Z",
+  "updatedAt": "2026-11-23T05:19:23.768Z",
   "cursor": {
-    "phase": null,
-    "task": null
+    "phase": "37",
+    "task": "37-02"
   },
   "phases": [
     {
@@ -13130,7 +13130,7 @@
       "dependsOn": [
         "35"
       ],
-      "status": "pending",
+      "status": "active",
       "tasks": [
         {
           "id": "37-01",
@@ -13139,11 +13139,12 @@
             "tests/integration/deploy-engine/contracts-v03.test.ts",
             "packages/docker/src/runtime-operations.test.ts",
             "docs/adr/0010-reliable-deploy-contracts.md",
-            "docs/testing/docker-engine-drift/"
+            "docs/testing/docker-engine-drift/",
+            ".planning/DECISIONS.md"
           ],
           "wave": 1,
           "dependsOn": [],
-          "status": "pending",
+          "status": "done",
           "gates": [
             "test",
             "typecheck",
@@ -13190,7 +13191,7 @@
             },
             {
               "id": "H3",
-              "text": "In the attached branch, the contract test shows the 'connect only when detached' condition is necessary: before the restore, a redundant `docker network connect <net> <-prev>` on the stopped, still-attached container exits non-zero with an endpoint-already-exists message and leaves networks == [noodara-net-<serviceId>]; the restore that follows still brings version A back with 201.",
+              "text": "In the attached branch, the contract test records how the engine handles a redundant `docker network connect <net> <-prev>` on the stopped, still-attached container before the restore. Either outcome is accepted: a non-zero exit with an endpoint-already-exists message (pre-29.10 engines), or exit 0 with no effect (observed on 29.10.0). Both leave networks == [noodara-net-<serviceId>], the restore that follows still brings version A back with 201, and the measure line records which outcome was seen. Any other result (extra network, endpoint lost, restore not 201) fails the test.",
               "proof": "test"
             },
             {
