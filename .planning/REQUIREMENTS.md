@@ -254,14 +254,14 @@ Reordenado por pedido explícito2026-11-10 (America/Managua): primero35-04 repar
 
 ## Publicación v0.5.2 — legacy log hardening (phases 34–35)
 
-Planificado y endurecido independientemente 2026-11-09; fase34 completa tras ocho gates finales PASS, revisión tier1 independiente PASS y avance real. REL-01/02/03 completos con [evidencia RC](../docs/releases/v0.5.2-gate.md#final-candidate-evidence--2026-11-09); REL-04 completo con stable35-01 publicado/validado y cinco gates PASS/avance real; REL-05 pendiente: CI44245779779 en `8f746de9` falló sólo en audit (advisory luego retirado); faltan CI completo y Publish site exitosos en el SHA documental final, gates y revisión final independiente35-02 ([estado](../docs/releases/v0.5.2-gate-logs/51-final-source-remote-status.json)). Seis criterios nuevos en34-02/35-01 cubren concurrencia/artefactos, emisión/captura real, límites, restauración y resolución estable. La fase33 permanece cerrada localmente en `ca9818ee`.
+Planificado y endurecido independientemente 2026-11-09; fase34 completa tras ocho gates finales PASS, revisión tier1 independiente PASS y avance real. REL-01/02/03 completos con [evidencia RC](../docs/releases/v0.5.2-gate.md#final-candidate-evidence--2026-11-09); REL-04 completo con stable35-01 publicado/validado y cinco gates PASS/avance real; REL-05 completo (2026-11-22; gates root PASS y revisión tier1 fase35 PASS): CI44245779779 en `8f746de9` falló sólo en audit (advisory luego retirado, [estado](../docs/releases/v0.5.2-gate-logs/51-final-source-remote-status.json)); el SHA documental final `34b81ddd` tiene CI44994161467 12/12 y Publish site44994161414 exitosos ([evidencia](../docs/releases/v0.5.2-gate-logs/52-final-docs-sha-ci-publish.json)). Seis criterios nuevos en34-02/35-01 cubren concurrencia/artefactos, emisión/captura real, límites, restauración y resolución estable. La fase33 permanece cerrada localmente en `ca9818ee`.
 Plan detallado: [34–35 release](34-35-v0.5.2-release.md). La planificación no publica ni modifica versiones.
 
 - [x] **REL-01**: Versiones base0.5.2 en todos los workspaces, notas y guard RC/final coherentes, sin cambios funcionales ajenos al hardening validado; preparación con gates y procedencia de fase33/H2.
 - [x] **REL-02**: RC público inmutable/no Latest con fuente equivalente verificada, imágenes públicas amd64/arm64 y CI/nightly completos sobre su SHA exacto; evidencia de intentos/skips y revisión independiente antes de promoción.
 - [x] **REL-03**: Upgrade Lima real conserva datos, cifrados/BYOK y configuración; smoke HTTP instalado demuestra redacción legacy tail/follow con secretos sintéticos, restauración/limpieza y H2 sin proveedor externo.
 - [x] **REL-04**: v0.5.2 estable/Latest en el commit exacto del RC aprobado, Release e imágenes públicas multiarch verificadas, smoke de imagen estable verde y tags históricos intactos.
-- [ ] **REL-05**: README/upgrade recomiendan0.5.2 después de publicar; accuracy/site/CI documental verdes, gate final acreditado y M2 distribuido con límites documentados y revisión final independiente.
+- [x] **REL-05**: README/upgrade recomiendan0.5.2 después de publicar; accuracy/site/CI documental verdes, gate final acreditado y M2 distribuido con límites documentados y revisión final independiente.
 
 ## v2 Requirements
 
@@ -454,7 +454,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | REL-02 | Phase 34 | Complete |
 | REL-03 | Phase 34 | Complete |
 | REL-04 | Phase 35 | Complete — stable35-01 Release/Lima/artifacts and five authoritative gates PASS; actual advance |
-| REL-05 | Phase 35 | Pending — CI44245779779 on `8f746de9` failed (security audit only); final docs SHA CI/site and phase35 review pending |
+| REL-05 | Phase 35 | Complete — final docs SHA `34b81ddd` CI44994161467 12/12 + Publish site44994161414 success (gate log 52); 35-02 authoritative gates passed 2026-11-22; independent tier-1 phase35 review PASS, 0 blocking; advance done |
 
 **Coverage:**
 - v1 requirements: 61 total

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-22T05:09:51.860Z",
+  "updatedAt": "2026-11-22T07:54:31.845Z",
   "cursor": {
-    "phase": "35",
-    "task": "35-02"
+    "phase": null,
+    "task": null
   },
   "phases": [
     {
@@ -12449,7 +12449,7 @@
       "dependsOn": [
         "34"
       ],
-      "status": "active",
+      "status": "done",
       "tasks": [
         {
           "id": "35-01",
@@ -12705,7 +12705,7 @@
             "35-04",
             "35-03"
           ],
-          "status": "active",
+          "status": "done",
           "gates": [
             "release-v052",
             "test",
