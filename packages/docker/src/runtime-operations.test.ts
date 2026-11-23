@@ -479,6 +479,47 @@ describe('restorePrevious (ADR 0010 A2 restore order)', () => {
     expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'ROLLBACK_FAILED' });
     expect(session.names()).not.toContain('docker.start');
   });
+
+  // 37-01: Engine 29.10 keeps the endpoint after a failed start of -prev (attached), 29.9.3 dropped
+  // it (detached); restorePrevious reads the state instead of presuming either.
+  it('a truncated network list is ROLLBACK_FAILED and connects and starts nothing', async () => {
+    const { session, context } = setup({
+      'docker.inspect_networks': { stdout: networks(''), truncated: true },
+    });
+
+    const result = await restorePrevious(context, { serviceId: SERVICE_ID });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed', code: 'ROLLBACK_FAILED' });
+    expect(session.names()).toEqual(['docker.rename_from_prev', 'docker.inspect_networks']);
+  });
+
+  it('H4: a container on another network only (bridge) is detached from its own and is connected before start', async () => {
+    const { session, context } = setup({
+      'docker.inspect_networks': { stdout: JSON.stringify({ bridge: { IPAddress: '' } }) },
+    });
+
+    const result = await restorePrevious(context, { serviceId: SERVICE_ID });
+
+    expect(result).toMatchObject({ ok: true, value: CONTAINER });
+    expect(session.names()).toEqual([
+      'docker.rename_from_prev',
+      'docker.inspect_networks',
+      'docker.network_connect',
+      'docker.start',
+    ]);
+    expect(session.call('docker.network_connect').command.argv).toContain(NETWORK);
+  });
+
+  it('H4: a failed network inspect stops before any connect or start', async () => {
+    const { session, context } = setup({
+      'docker.inspect_networks': { exitCode: 1, stderr: DAEMON_DOWN },
+    });
+
+    const result = await restorePrevious(context, { serviceId: SERVICE_ID });
+
+    expect(result).toMatchObject({ ok: false, kind: 'failed' });
+    expect(session.names()).toEqual(['docker.rename_from_prev', 'docker.inspect_networks']);
+  });
 });
 
 describe('start / stop / remove the -prev container', () => {
