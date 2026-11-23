@@ -251,6 +251,7 @@ Reordenado por pedido explícito2026-11-10 (America/Managua): primero35-04 repar
 - [ ] **QA-26**: Un paso lento no produce fallos en cascada: el test unitario que importa la app completa tiene presupuesto propio y un timeout en los contratos SSH no deja recursos que hagan fallar a los tests siguientes; el leak guard no se debilita.
 - [ ] **QA-27**: Camino de contribución sin Docker (`pnpm verify`), preflight `pnpm test:doctor` con mensajes fijos y sin fuga de entorno, fallo temprano en los global setup y `CONTRIBUTING.md` con niveles de test y requisitos de máquina.
 - [ ] **QA-28**: Imágenes de fixture SSH direccionadas por contenido: reutilización local, pull opcional desde registry con verificación y fallback a build; workflow de publicación con acciones fijadas y permisos mínimos. La publicación requiere aprobación explícita.
+- [ ] **QA-29**: El contrato ADR 0010 A2 (`-prev` tras un `docker start` fallido) refleja el comportamiento real de cada Docker Engine que instala install.sh (desconecta la red hasta 29.9.3, no en 29.10.0), la restauración del producto se prueba en ambos casos y el nightly deploy-engine 22.04/24.04 vuelve a verde sin fijar Docker ni debilitar aserciones.
 
 ## Publicación v0.5.2 — legacy log hardening (phases 34–35)
 
@@ -449,6 +450,7 @@ Cada requisito mapea a exactamente una fase: la primera que puede entregarlo de 
 | QA-26 | Phase 36 / 36-02 | Pending |
 | QA-27 | Phase 36 / 36-03 | Pending |
 | QA-28 | Phase 36 / 36-04 | Pending |
+| QA-29 | Phase 37 | Pending |
 
 | REL-01 | Phase 34 | Complete |
 | REL-02 | Phase 34 | Complete |

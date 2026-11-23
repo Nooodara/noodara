@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "v0.5",
   "createdAt": "2026-10-02T01:39:08.568Z",
-  "updatedAt": "2026-11-22T07:54:31.845Z",
+  "updatedAt": "2026-11-23T04:46:57.398Z",
   "cursor": {
     "phase": null,
     "task": null
@@ -13117,6 +13117,137 @@
           ],
           "waives": [],
           "tier": "deep"
+        }
+      ]
+    },
+    {
+      "id": "37",
+      "title": "Docker Engine 29.10 drift: ADR 0010 A2 contract and nightly deploy-engine",
+      "goal": "The nightly deploy-engine jobs (22.04/24.04) are green again with a contract that tells the truth on every Docker Engine a user can get from install.sh: the A2 characterization test records which -prev network behaviour the engine shows after a failed start and proves the product restore path works under both, ADR 0010 states the behaviour is version-dependent, and no assertion, skip, retry or Docker pin hides the drift.",
+      "requirements": [
+        "QA-29"
+      ],
+      "dependsOn": [
+        "35"
+      ],
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "37-01",
+          "title": "Make the ADR 0010 A2 -prev contract truthful across Docker Engine 29.9 and 29.10",
+          "scope": [
+            "tests/integration/deploy-engine/contracts-v03.test.ts",
+            "packages/docker/src/runtime-operations.test.ts",
+            "docs/adr/0010-reliable-deploy-contracts.md",
+            "docs/testing/docker-engine-drift/"
+          ],
+          "wave": 1,
+          "dependsOn": [],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint",
+            "boundaries",
+            "it-contracts-v03",
+            "it-runtime-rollback-all"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "RED first on the real cause. Build the sshd-dockerd fixture for 22.04 and 24.04 without reusing a cached apt layer and record the Docker Engine version it reports (the G2 versions line). On an engine >= 29.10.0 the unchanged test `PREV / ADR 0010 / A2: starting -prev while the new container holds the port fails AND detaches -prev ...` fails at the `networkNames(prev)` assertion, matching nightly 44073612196 / 45013137566 (29.10.0, failure) versus 43581697263 (29.9.3, success) on the same source 784ca1b6. Record versions, run ids and the failing line in docs/testing/docker-engine-drift/ without hostnames, usernames or environment dumps. A RED obtained on a stale 29.9.x image is not valid evidence.",
+              "proof": "test"
+            },
+            {
+              "id": "A2",
+              "text": "The contract test observes instead of presuming: after the blocked `docker start <-prev>` it classifies the -prev network state as exactly `detached` (no endpoint) or `attached` (exactly [noodara-net-<serviceId>]); any other shape (other networks, several networks, inspect failure) fails the test. Both branches keep the invariants: the blocked start exits non-zero with a port-conflict message, the new container keeps answering 202, and the product restore order (rm new, rename -prev back, `docker network connect` only when detached, start) brings version A back on the port with 201 and networks == [net]. The `plain restore runs with no network and the port refused` assertions run only in the detached branch; in the attached branch the test asserts the plain restore answers. The measure line records engine version and observed branch. No skip, retry, longer settle time or removed assertion.",
+              "proof": "test"
+            },
+            {
+              "id": "A3",
+              "text": "Unit coverage of `restorePrevious` in packages/docker/src/runtime-operations.test.ts proves it issues `docker network connect` when the inspect shows the network detached and issues none when already attached, and that an invalid/truncated inspect ends ROLLBACK_FAILED. If equivalent tests already exist, cite their names in the handoff and add only the missing case, RED first.",
+              "proof": "test"
+            },
+            {
+              "id": "A4",
+              "text": "The real restore path stays green on the 29.10 engine: gates it-contracts-v03 and it-runtime-rollback-all (both Ubuntu versions) pass at scale 1, with the engine version printed by the run recorded. If the local machine cannot run them at scale 1 the result is labelled scaled local evidence and the CI/nightly confirmation of 37-02 remains mandatory.",
+              "proof": "test"
+            },
+            {
+              "id": "A5",
+              "text": "ADR 0010 A2 gains a dated amendment (original measurements untouched): the detach-on-failed-start surprise was observed up to Engine 29.9.3 and is not observed on 29.10.0; the decision (never start -prev while the new container exists; connect only if detached) stands because it is correct under both. The `Enforced by` line names the renamed test. No pin of docker-ce in the fixture Dockerfiles: install.sh installs the current docker-ce, so the fixture must keep matching what users get (decision recorded in .planning/DECISIONS.md).",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "Nothing outside scope changes: no product code in packages/docker/src or apps/ (restorePrevious already handles both states; a needed product change stops the task and returns to planning), no fixture Dockerfile, workflow, timeout budget or leak-guard change.",
+              "proof": "manual"
+            },
+            {
+              "id": "H2",
+              "text": "The A2 contract test classifies the -prev network state from the same source the product reads (`docker inspect --format '{{json .NetworkSettings.Networks}}'`, keyed by the exact name noodara-net-<serviceId>), so an attached endpoint with an empty IPAddress on the stopped container counts as `attached` in both the test and restorePrevious (networkAddress 'none'), and the test and product cannot disagree on the branch.",
+              "proof": "test"
+            },
+            {
+              "id": "H3",
+              "text": "In the attached branch, the contract test shows the 'connect only when detached' condition is necessary: before the restore, a redundant `docker network connect <net> <-prev>` on the stopped, still-attached container exits non-zero with an endpoint-already-exists message and leaves networks == [noodara-net-<serviceId>]; the restore that follows still brings version A back with 201.",
+              "proof": "test"
+            },
+            {
+              "id": "H4",
+              "text": "restorePrevious unit coverage adds two cases: (a) an inspect that lists only a network other than noodara-net-<serviceId> (e.g. bridge) is treated as detached and issues `docker network connect` before start; (b) a non-zero exit of the network inspect stops before any network connect or start and returns a failed StepResult (no container started).",
+              "proof": "test"
+            }
+          ],
+          "waives": [
+            "http-api/body-cap",
+            "persistence/missing-file-boot"
+          ],
+          "tier": "deep"
+        },
+        {
+          "id": "37-02",
+          "title": "Publish the fix and confirm nightly deploy-engine on the merged SHA",
+          "scope": [
+            "docs/testing/docker-engine-drift/",
+            ".planning/REQUIREMENTS.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md"
+          ],
+          "wave": 2,
+          "dependsOn": [
+            "37-01"
+          ],
+          "status": "pending",
+          "gates": [
+            "test",
+            "typecheck",
+            "lint"
+          ],
+          "acceptance": [
+            {
+              "id": "A1",
+              "text": "37-01 lands on main through a reviewed PR (feature branch, Conventional Commits, no attribution trailers, no `git add -A`). PR CI and push-to-main CI succeed on the exact SHAs, recorded with run ids and job counts; no extrapolation from another SHA.",
+              "proof": "manual"
+            },
+            {
+              "id": "A2",
+              "text": "The next scheduled (or user-approved workflow_dispatch) Nightly on the merged SHA has deploy-engine (22.04) and deploy-engine (24.04) success, with the Docker Engine version from each job's G2 line and the observed A2 branch recorded. Other nightly jobs are reported as they are; an unrelated failure is listed as open debt, never called green.",
+              "proof": "manual"
+            },
+            {
+              "id": "A3",
+              "text": "QA-29 marked complete in REQUIREMENTS.md only with the A1/A2 evidence; STATE.md drops the 'Nightly ADR 0010 A2' open-debt note and keeps phase15/OPS-05 open.",
+              "proof": "manual"
+            },
+            {
+              "id": "H1",
+              "text": "The nightly confirmation counts only if each deploy-engine job's G2 line reports Docker Engine >= 29.10.0 and the recorded A2 branch is `attached`; a job that reports an older engine, or `detached` on >= 29.10, is recorded as not confirming (or as new drift) and QA-29 stays open.",
+              "proof": "manual"
+            }
+          ],
+          "waives": [],
+          "tier": "standard"
         }
       ]
     }
